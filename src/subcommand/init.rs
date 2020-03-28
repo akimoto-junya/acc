@@ -14,7 +14,8 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
             .index(1))
 }
 
-fn make_dir(dir_name: &str) -> bool {
+fn make_dir<S: Into<String>>(dir_name: S) -> bool {
+    let dir_name = dir_name.into();
     let output = Command::new("mkdir")
         .arg(dir_name)
         .output()
@@ -26,22 +27,24 @@ pub fn run(matches: &ArgMatches) {
     let dir_name = matches.value_of("DIR_NAME").unwrap();
     let is_successful = make_dir(dir_name);
     if !is_successful {
-        println!("{}: {} directory already exists", colortext::ERROR, dir_name);
+        util::print_error(format!("{} directory already exists", dir_name));
         process::exit(1);
     }
-    let config = util::load_config().init;
+    let _ = make_dir(dir_name.to_string() + "/testcase");
+
     /* 拡張子が設定されているならその分のファイルを作成 */
+    let config = util::load_config().init;
     if let Some(extension) = config.extension {
         let total_file = config.total_task.unwrap();
         let files = (b'A'..=b'Z').take(total_file as usize)
             .map(|c| c as char)
-            .map(|file| [file.to_string(), extension.clone()].connect("."))
+            .map(|file| [file.to_string(), extension.clone()].join("."))
             .collect::<Vec<String>>();
         for file in files {
             let path = env::current_dir().unwrap();
             let path = path.to_str().unwrap();
             let path = path.to_string();
-            let file_path = [path, dir_name.to_string(), file].connect("/");
+            let file_path = [path, dir_name.to_string(), file].join("/");
             let _ = Command::new("touch")
                 .arg(file_path)
                 .output()

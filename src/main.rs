@@ -1,7 +1,6 @@
 extern crate acc;
 use clap::{Arg, App};
 use acc::subcommand;
-use acc::util;
 
 fn main() {
     let matches = App::new("atcj")

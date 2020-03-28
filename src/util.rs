@@ -4,10 +4,15 @@ use std::process::Command;
 use crate::colortext;
 use crate::config::{Config, Overridable, Test, Submit, Init};
 
+pub fn print_error<S: Into<String>>(error_message: S) {
+    let error_message = error_message.into();
+    println!("{}: {}", colortext::ERROR, error_message);
+}
+
 pub fn read_file(path: &str) -> String {
     fs::read_to_string(path).unwrap_or_else(
         |_| {
-            println!("{}: {} is not found", colortext::ERROR, path);
+            print_error(format!("{} is not found", path));
             process::exit(1);
         }
     )
@@ -16,7 +21,7 @@ pub fn read_file(path: &str) -> String {
 pub fn load_config() -> Config {
     let home = env::home_dir().unwrap_or_else(
         || {
-            println!("{}: home directory is not defined", colortext::ERROR);
+            print_error(format!("home directory is not defined"));
             process::exit(1);
         }
     );
@@ -50,7 +55,7 @@ command = './<TASK>'"#;
     let content = fs::read_to_string(config_path).unwrap();
     let mut config: Config = toml::from_str(&content).unwrap_or_else(
         |_| {
-            println!("{}: config content is wrong", colortext::ERROR);
+            print_error("config content is wrong");
             process::exit(1);
         }
     );
