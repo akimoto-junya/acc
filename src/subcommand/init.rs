@@ -1,4 +1,4 @@
-use std::process;
+use std::{process, env};
 use std::process::Command;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use crate::colortext;
@@ -22,10 +22,6 @@ fn make_dir(dir_name: &str) -> bool {
     output.status.success()
 }
 
-fn copy_config_file() {
-
-}
-
 pub fn run(matches: &ArgMatches) {
     let dir_name = matches.value_of("DIR_NAME").unwrap();
     let is_successful = make_dir(dir_name);
@@ -33,5 +29,23 @@ pub fn run(matches: &ArgMatches) {
         println!("{}: {} directory already exists", colortext::ERROR, dir_name);
         process::exit(1);
     }
-    let config = util::load_config();
+    let config = util::load_config().init;
+    /* 拡張子が設定されているならその分のファイルを作成 */
+    if let Some(extension) = config.extension {
+        let total_file = config.total_task.unwrap();
+        let files = (b'A'..=b'Z').take(total_file as usize)
+            .map(|c| c as char)
+            .map(|file| [file.to_string(), extension.clone()].connect("."))
+            .collect::<Vec<String>>();
+        for file in files {
+            let path = env::current_dir().unwrap();
+            let path = path.to_str().unwrap();
+            let path = path.to_string();
+            let file_path = [path, dir_name.to_string(), file].connect("/");
+            let _ = Command::new("touch")
+                .arg(file_path)
+                .output()
+                .expect("failed to execute process");
+        }
+    }
 }

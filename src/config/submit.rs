@@ -3,7 +3,7 @@ use crate::config::Overridable;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Submit {
-    needs_test: Option<bool>,
+    pub needs_test: Option<bool>,
 }
 
 impl Overridable for Submit {

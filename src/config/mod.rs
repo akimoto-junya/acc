@@ -2,13 +2,11 @@ use serde::{Deserialize, Serialize};
 
 pub use user::User;
 pub use init::Init;
-pub use contest::Contest;
 pub use submit::Submit;
 pub use test::Test;
 
 pub mod user;
 pub mod init;
-pub mod contest;
 pub mod submit;
 pub mod test;
 

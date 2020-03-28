@@ -3,12 +3,12 @@ use crate::config::Overridable;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Test {
-    compiler: Option<String>,
-    compile_arg: Option<String>,
-    needs_put: Option<bool>,
-    command: String,
-    command_arg: Option<String>,
-    tle_time: Option<u16>,
+    pub compiler: Option<String>,
+    pub compile_arg: Option<String>,
+    pub needs_put: Option<bool>,
+    pub command: String,
+    pub command_arg: Option<String>,
+    pub tle_time: Option<u16>,
 }
 
 impl Overridable for Test {
