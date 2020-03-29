@@ -10,3 +10,5 @@ edition = "2018"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 clap = "2.33.0"
+dirs = "2.0"
+async-std = "1.0.0"

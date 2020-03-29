@@ -1,9 +1,57 @@
-use std::process;
+use std::{time, process, thread};
 use std::process::{Command, Stdio};
+use std::sync::{Arc, Mutex};
+use std::cmp::Ordering;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use crate::{util, colortext};
+use crate::config::Test;
 
 pub const NAME: &str = "test";
+
+#[derive(Copy, Clone, Eq)]
+enum Status {
+    AC = 0,
+    TLE = 1,
+    WA = 2,
+    CE = 3,
+}
+
+impl Ord for Status {
+    fn cmp(&self, other: &Status) -> Ordering {
+        (*self as i32).cmp(&(*other as i32))
+    }
+}
+
+impl PartialOrd for Status {
+    fn partial_cmp(&self, other: &Status) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Status {
+    fn eq(&self, other: &Status) -> bool {
+        *self as i32 == *other as i32
+    }
+}
+
+impl Status {
+    fn to_string(&self) -> String {
+        match self {
+            Status::AC => colortext::AC.to_string(),
+            Status::TLE => colortext::TLE.to_string(),
+            Status::WA => colortext::WA.to_string(),
+            Status::CE => colortext::CE.to_string(),
+        }
+    }
+}
+
+fn remove_last_indent<S: Into<String>>(content: S) -> String {
+    let mut result = content.into();
+    if result.ends_with("\n") {
+        result.pop();
+    }
+    result
+}
 
 pub fn get_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(&NAME)
@@ -13,46 +61,102 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
             .index(1))
 }
 
-pub fn run(matches: &ArgMatches) {
-    let task_name = matches.value_of("TASK_NAME").unwrap();
-    let config = util::load_config().test;
-    if let Some(compiler) = config.compiler {
-        if config.compile_arg.is_none() {
-            util::print_error("\"compile_arg\" in config.toml is not defined");
-            process::exit(1);
-        }
-        let arg = config.compile_arg.unwrap();
-        let arg = arg.replace("<TASK>", task_name);
-        let args = arg.split(" ");
-        let output = Command::new(compiler)
-            .args(args)
-            .output()
-            .expect("failed to execute process");
-        let status = output.status;
-        if !status.success() {
-            let output = String::from_utf8(output.stderr).unwrap();
-            util::print_error("failed to compile");
-            println!("{}\n\nresult: {}", output, colortext::CE);
-            process::exit(1);
-        }
-        println!("compile is finished!\n");
+fn compile(config: &Test, task_name: &str) {
+    let compiler = config.compiler.as_ref().unwrap();
+    if config.compile_arg.is_none() {
+        util::print_error("\"compile_arg\" in config.toml is not defined");
+        process::exit(1);
     }
+    let arg = config.compile_arg.as_ref().unwrap();
+    let arg = arg.replace("<TASK>", task_name);
+    let args = arg.split(" ");
+    let output = Command::new(compiler)
+        .args(args)
+        .output()
+        .expect("failed to execute process");
+    let status = output.status;
+    if !status.success() {
+        let output = String::from_utf8(output.stderr).unwrap();
+        util::print_error("failed to compile");
+        println!("{}\n\nresult: {}", output, colortext::CE);
+        process::exit(1);
+    }
+    println!("{}: compile is finished\n", colortext::INFO);
+}
 
+fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) -> Option<String> {
     let input = Command::new("echo")
         .args(&["-e", "-n"])
-        .arg("testcase input")
+        .arg(testcase_input)
         .stdout(Stdio::piped())
         .spawn()
         .expect("failed to execute process");
     let input = input.stdout.unwrap();
-    let mut command = Command::new(config.command);
-    if let Some(arg) = config.command_arg {
+    let command_name = config.command.replace("<TASK>", task_name);
+    let mut command = Command::new(command_name);
+    if let Some(arg) = config.command_arg.as_ref() {
         let arg = arg.replace("<TASK>", task_name);
         let args = arg.split(" ");
         command.args(args);
     }
-    let output = command.stdin(input)
-        .output()
-        .expect("failed to execute process");
+    let mut command_child = command.stdin(input).stdout(Stdio::piped()).spawn().unwrap();
+    let start = time::Instant::now();
+    loop {
+        match command_child.try_wait() {
+            Ok(Some(_status)) => {
+                let output = command_child.stdout.unwrap();
+                let output = Command::new("cat").stdin(output).output().unwrap();
+                return Some(String::from_utf8_lossy(&output.stdout).to_string())
+            },
+            Ok(None) => {
+                let duration = start.elapsed().as_millis();
+                if duration > tle_time.into() {
+                    let _ = command_child.kill().expect("command wasn't running");
+                    return None
+                }
+            },
+            Err(e) => {
+                util::print_error("command is not available");
+                process::exit(1);
+            }
+        }
+        thread::yield_now();
+    }
+}
 
+pub fn run(matches: &ArgMatches) {
+    let task_name = matches.value_of("TASK_NAME").unwrap();
+    let config = util::load_config().test;
+
+    if config.compiler.is_some() {
+        compile(&config, task_name);
+    }
+
+    let mut all_result = Status::AC;
+    let mut count = 0;
+    let inputs: Vec<&str> = vec!["4 2\n3 4\n", "100 200\n300 400\n"];
+    let outputs:Vec<&str> = vec!["5\n3\n4\n5", "100\n201\n301\n401\n"];
+    for (input, output) in inputs.iter().zip(outputs.iter()) {
+        count += 1;
+        print!("testcase{} ... ", count);
+        // tle <= config
+        let tle_time = 100;
+        let result = execute(&config, task_name, input, tle_time);
+        if result.is_none() {
+            all_result = all_result.max(Status::TLE);
+            println!("{}", colortext::TLE);
+            continue;
+        }
+        let result = remove_last_indent(result.unwrap());
+        let output = remove_last_indent(*output);
+        let is_correct = result == output;
+        let status = if is_correct {
+            colortext::AC
+        } else {
+            all_result = all_result.max(Status::WA);
+            colortext::WA
+        };
+        println!("{}", status);
+    }
+    println!("result: {}", all_result.to_string());
 }

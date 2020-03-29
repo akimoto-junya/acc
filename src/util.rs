@@ -19,14 +19,14 @@ pub fn read_file(path: &str) -> String {
 }
 
 pub fn load_config() -> Config {
-    let home = env::home_dir().unwrap_or_else(
+    let config_dir = dirs::config_dir().unwrap_or_else(
         || {
-            print_error(format!("home directory is not defined"));
+            print_error(format!("config directory is not defined"));
             process::exit(1);
         }
     );
 
-    let config_dir = &(home.to_string_lossy()+"/.config/acc");
+    let config_dir = &(config_dir.to_string_lossy() + "/acc");
     let config_path: &str = &(config_dir.to_string() + "/config.toml");
 
     let output = Command::new("test")
