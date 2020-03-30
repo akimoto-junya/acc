@@ -3,10 +3,16 @@ use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::cmp::Ordering;
 use clap::{App, ArgMatches, SubCommand, Arg};
+use easy_scraper::Pattern;
+use reqwest::blocking;
 use crate::{util, colortext};
 use crate::config::Test;
 
 pub const NAME: &str = "test";
+
+const URL_TEMPLATE: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST>_<TASK>";
+
+const TESTCASE_PATTERN: &str = r#"<span class="lang-ja"><h3></h3><pre>{{io}}</pre></span>"#;
 
 #[derive(Copy, Clone, Eq)]
 enum Status {
@@ -45,14 +51,6 @@ impl Status {
     }
 }
 
-fn remove_last_indent<S: Into<String>>(content: S) -> String {
-    let mut result = content.into();
-    if result.ends_with("\n") {
-        result.pop();
-    }
-    result
-}
-
 pub fn get_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(&NAME)
         .about("Run tests for <TASK_NAME>")
@@ -67,6 +65,7 @@ fn compile(config: &Test, task_name: &str) {
         util::print_error("\"compile_arg\" in config.toml is not defined");
         process::exit(1);
     }
+    println!("{}: starting compile", colortext::INFO);
     let arg = config.compile_arg.as_ref().unwrap();
     let arg = arg.replace("<TASK>", task_name);
     let args = arg.split(" ");
@@ -76,12 +75,12 @@ fn compile(config: &Test, task_name: &str) {
         .expect("failed to execute process");
     let status = output.status;
     if !status.success() {
-        let output = String::from_utf8(output.stderr).unwrap();
+        let output = String::from_utf8_lossy(&output.stderr);
         util::print_error("failed to compile");
         println!("{}\n\nresult: {}", output, colortext::CE);
         process::exit(1);
     }
-    println!("{}: compile is finished\n", colortext::INFO);
+    println!("{}: compiled successfully\n", colortext::INFO);
 }
 
 fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) -> Option<String> {
@@ -124,6 +123,31 @@ fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) 
     }
 }
 
+pub fn get_testcases<S: Into<String>>(contest_name: S, task_name: S) -> (Vec<String>, Vec<String>) {
+    let contest_name = contest_name.into();
+    let task_name = task_name.into();
+
+    // kakuninn
+    let url = URL_TEMPLATE.to_string();
+    let url = url.replace("<CONTEST>", &contest_name);
+    let url = url.replace("<TASK>", &task_name.to_lowercase());
+    let document = blocking::get(&url).unwrap_or_else(|_| {
+        util::print_error(format!("{} is wrong", url));
+        process::exit(1);
+    });
+    let document = document.text().unwrap();
+    let pattern = Pattern::new(TESTCASE_PATTERN).unwrap();
+    let io_cases = pattern.matches(&document);
+    if io_cases.len() % 2 != 0 {
+        util::print_error("The correct test case could not be get");
+        process::exit(1);
+    }
+    let inputs = io_cases.iter().step_by(2).map(|x| x["io"].clone()).collect();
+    let outputs = io_cases.iter().skip(1).step_by(2).map(|x| x["io"].clone()).collect();
+
+    (inputs, outputs)
+}
+
 pub fn run(matches: &ArgMatches) {
     let task_name = matches.value_of("TASK_NAME").unwrap();
     let config = util::load_config().test;
@@ -134,21 +158,21 @@ pub fn run(matches: &ArgMatches) {
 
     let mut all_result = Status::AC;
     let mut count = 0;
-    let inputs: Vec<&str> = vec!["4 2\n3 4\n", "100 200\n300 400\n"];
-    let outputs:Vec<&str> = vec!["5\n3\n4\n5", "100\n201\n301\n401\n"];
+    let (inputs, outputs) = get_testcases("abc160", task_name);
+    println!("{}: starting test ...", colortext::INFO);
     for (input, output) in inputs.iter().zip(outputs.iter()) {
         count += 1;
-        print!("testcase{} ... ", count);
-        // tle <= config
-        let tle_time = 100;
+        print!(" - testcase {} ... ", count);
+
+        let tle_time = config.tle_time.unwrap_or(3000);
         let result = execute(&config, task_name, input, tle_time);
         if result.is_none() {
             all_result = all_result.max(Status::TLE);
             println!("{}", colortext::TLE);
             continue;
         }
-        let result = remove_last_indent(result.unwrap());
-        let output = remove_last_indent(*output);
+        let result = util::remove_last_indent(result.unwrap());
+        let output = util::remove_last_indent(output);
         let is_correct = result == output;
         let status = if is_correct {
             colortext::AC

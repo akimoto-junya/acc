@@ -2,11 +2,19 @@ use std::{fs, process, env};
 use std::io::prelude::*;
 use std::process::Command;
 use crate::colortext;
-use crate::config::{Config, Overridable, Test, Submit, Init};
+use crate::config::{Config, Overridable, Test, Init};
 
 pub fn print_error<S: Into<String>>(error_message: S) {
     let error_message = error_message.into();
     println!("{}: {}", colortext::ERROR, error_message);
+}
+
+pub fn remove_last_indent<S: Into<String>>(content: S) -> String {
+    let mut result = content.into();
+    if result.ends_with("\n") {
+        result.pop();
+    }
+    result
 }
 
 pub fn read_file(path: &str) -> String {
@@ -43,8 +51,6 @@ pub fn load_config() -> Config {
 
 [init]
 
-[submit]
-
 [test]
 compiler = 'g++'
 compile_arg = '<TASK>.cpp -o <TASK>'
@@ -60,7 +66,6 @@ command = './<TASK>'"#;
         }
     );
     config.init.override_by_default();
-    config.submit.override_by_default();
     config.test.override_by_default();
     config
 }

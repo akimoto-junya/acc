@@ -13,7 +13,7 @@ pub struct Test {
 impl Overridable for Test {
     fn override_by_default(&mut self) {
         if self.tle_time.is_none() {
-            self.tle_time = Some(2000);
+            self.tle_time = Some(3000);
         }
     }
 }
