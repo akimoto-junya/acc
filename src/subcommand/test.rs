@@ -145,7 +145,7 @@ fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) 
                     return None
                 }
             },
-            Err(e) => {
+            Err(_e) => {
                 util::print_error("command is not available");
                 process::exit(1);
             }

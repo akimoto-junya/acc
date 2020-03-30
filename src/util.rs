@@ -2,7 +2,7 @@ use std::{fs, process, env};
 use std::io::prelude::*;
 use std::process::Command;
 use crate::colortext;
-use crate::config::{Config, Overridable, Test, Init};
+use crate::config::{Config, Overridable};
 
 pub fn print_error<S: Into<String>>(error_message: S) {
     let error_message = error_message.into();

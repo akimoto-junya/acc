@@ -1,4 +1,7 @@
 use std::{process, env};
+use std::fs::{self, File};
+use std::io::prelude::*;
+use std::path::Path;
 use std::process::Command;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use crate::colortext;
@@ -33,22 +36,32 @@ pub fn run(matches: &ArgMatches) {
     let _ = make_dir(dir_name.to_string() + "/testcase");
 
     /* 拡張子が設定されているならその分のファイルを作成 */
-    let config = util::load_config(true).init;
+    let config = util::load_config(false).init;
     if let Some(extension) = config.extension {
+        println!("{}", extension);
         let total_file = config.total_task.unwrap();
         let files = (b'A'..=b'Z').take(total_file as usize)
             .map(|c| c as char)
             .map(|file| [file.to_string(), extension.clone()].join("."))
             .collect::<Vec<String>>();
+        let path = env::current_dir().unwrap();
+        let path = path.to_str().unwrap();
+        let config_dir = dirs::config_dir().unwrap_or_else(|| {
+                    util::print_error("config directory is not defined");
+                    process::exit(1);
+                }).to_string_lossy().to_string() + "/acc";
+        let template_path = [config_dir + "/template", extension].join(".");
+        let exists_template = Path::new(&template_path).exists();
+        let template = fs::read_to_string(template_path).unwrap_or(String::new());
         for file in files {
-            let path = env::current_dir().unwrap();
-            let path = path.to_str().unwrap();
-            let path = path.to_string();
-            let file_path = [path, dir_name.to_string(), file].join("/");
-            let _ = Command::new("touch")
-                .arg(file_path)
-                .output()
-                .expect("failed to execute process");
+            let file_path = [path, dir_name, &file].join("/");
+            let mut file = File::create(file_path).unwrap();
+            if exists_template {
+                file.write_all(template.as_bytes()).unwrap_or_else(|_| {
+                    util::print_error("failed to copy template");
+                    process::exit(1);
+                });
+            }
         }
     }
 }
