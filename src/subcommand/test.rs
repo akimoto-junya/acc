@@ -1,18 +1,19 @@
-use std::{time, process, thread};
+use std::{env, time, process, thread, fs};
+use std::fs::File;
+use std::io::Write;
 use std::process::{Command, Stdio};
-use std::sync::{Arc, Mutex};
 use std::cmp::Ordering;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use easy_scraper::Pattern;
+use serde::{Deserialize, Serialize};
 use reqwest::blocking;
 use crate::{util, colortext};
 use crate::config::Test;
 
 pub const NAME: &str = "test";
-
 const URL_TEMPLATE: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST>_<TASK>";
-
 const TESTCASE_PATTERN: &str = r#"<span class="lang-ja"><h3></h3><pre>{{io}}</pre></span>"#;
+
 
 #[derive(Copy, Clone, Eq)]
 enum Status {
@@ -47,6 +48,36 @@ impl Status {
             Status::TLE => colortext::TLE.to_string(),
             Status::WA => colortext::WA.to_string(),
             Status::CE => colortext::CE.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct TestcaseFile {
+    testcases: Vec<Testcase>,
+}
+
+impl TestcaseFile {
+    fn new(testcases: Vec<Testcase>) -> TestcaseFile{
+        TestcaseFile {
+            testcases: testcases
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct Testcase {
+    input: String,
+    output: String
+}
+
+impl Testcase {
+    fn new<S: Into<String>, T: Into<String>>(input: S, output: T) -> Testcase{
+        let input = input.into();
+        let output = output.into();
+        Testcase {
+            input: input,
+            output: output
         }
     }
 }
@@ -123,11 +154,28 @@ fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) 
     }
 }
 
-pub fn get_testcases<S: Into<String>>(contest_name: S, task_name: S) -> (Vec<String>, Vec<String>) {
+pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_name: T) -> (Vec<String>, Vec<String>) {
     let contest_name = contest_name.into();
     let task_name = task_name.into();
+    let mut path = env::current_dir().unwrap();
+    path.push("testcase");
+    path.push([&task_name, "toml"].join("."));
+    let testcase_path = path.as_path();
 
-    // kakuninn
+    // すでにテストケースがあるならそれを返す
+    if testcase_path.exists() {
+        let testcase_path = testcase_path.to_str().unwrap();
+        let content = fs::read_to_string(testcase_path).unwrap();
+        let file: TestcaseFile = toml::from_str(&content).unwrap_or_else(|_|{
+            util::print_error("testcase file is wrong");
+            process::exit(1);
+        });
+        let inputs = file.testcases.iter().map(|x| x.input.clone()).collect();
+        let outputs = file.testcases.iter().map(|x| x.output.clone()).collect();
+        return (inputs, outputs)
+    }
+
+    // テストケースをAtCoderから取得
     let url = URL_TEMPLATE.to_string();
     let url = url.replace("<CONTEST>", &contest_name);
     let url = url.replace("<TASK>", &task_name.to_lowercase());
@@ -142,15 +190,29 @@ pub fn get_testcases<S: Into<String>>(contest_name: S, task_name: S) -> (Vec<Str
         util::print_error("The correct test case could not be get");
         process::exit(1);
     }
-    let inputs = io_cases.iter().step_by(2).map(|x| x["io"].clone()).collect();
-    let outputs = io_cases.iter().skip(1).step_by(2).map(|x| x["io"].clone()).collect();
+    let inputs: Vec<String> = io_cases.iter().step_by(2).map(|x| x["io"].clone()).collect();
+    let outputs: Vec<String> = io_cases.iter().skip(1).step_by(2).map(|x| x["io"].clone()).collect();
 
+    // テストケースファイルの作成
+    let mut testcases = Vec::<Testcase>::new();
+    for (input, output) in inputs.iter().zip(outputs.iter()) {
+        testcases.push(Testcase::new(input, output));
+    }
+    let content = toml::to_string(&TestcaseFile::new(testcases)).unwrap();
+    let testcase_path = testcase_path.to_str().unwrap();
+    let mut file = File::create(testcase_path).unwrap();
+    file.write_all(content.as_bytes()).unwrap();
     (inputs, outputs)
 }
 
 pub fn run(matches: &ArgMatches) {
     let task_name = matches.value_of("TASK_NAME").unwrap();
-    let config = util::load_config().test;
+    let config = util::load_config(true);
+    let contest_name = config.contest.unwrap_or_else( ||{
+        util::print_error("contest_name in local config.toml is not defined");
+        process::exit(1);
+    });
+    let config = config.test;
 
     if config.compiler.is_some() {
         compile(&config, task_name);
@@ -158,7 +220,7 @@ pub fn run(matches: &ArgMatches) {
 
     let mut all_result = Status::AC;
     let mut count = 0;
-    let (inputs, outputs) = get_testcases("abc160", task_name);
+    let (inputs, outputs) = get_testcases(contest_name, task_name);
     println!("{}: starting test ...", colortext::INFO);
     for (input, output) in inputs.iter().zip(outputs.iter()) {
         count += 1;

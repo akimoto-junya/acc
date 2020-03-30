@@ -10,6 +10,7 @@ pub mod test;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Config {
+    pub contest: Option<String>,
     pub user: User,
     pub init: Init,
     pub test: Test,

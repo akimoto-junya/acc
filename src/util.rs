@@ -25,29 +25,7 @@ pub fn read_file(path: &str) -> String {
         }
     )
 }
-
-pub fn load_config() -> Config {
-    let config_dir = dirs::config_dir().unwrap_or_else(
-        || {
-            print_error(format!("config directory is not defined"));
-            process::exit(1);
-        }
-    );
-
-    let config_dir = &(config_dir.to_string_lossy() + "/acc");
-    let config_path: &str = &(config_dir.to_string() + "/config.toml");
-
-    let output = Command::new("test")
-        .args(&["-d", config_dir])
-        .output()
-        .expect("failed to execute process");
-    if !output.status.success() {
-        let _ = Command::new("mkdir")
-            .args(&["-p", config_dir])
-            .output()
-            .expect("failed to execute process");
-        let mut file = fs::File::create(config_path).unwrap();
-        const DEFAULT_CONFIG: &str = r#"[user]
+const DEFAULT_CONFIG: &str = r#"[user]
 
 [init]
 
@@ -55,7 +33,38 @@ pub fn load_config() -> Config {
 compiler = 'g++'
 compile_arg = '<TASK>.cpp -o <TASK>'
 command = './<TASK>'"#;
-        file.write_all(DEFAULT_CONFIG.as_bytes()).unwrap();
+
+pub fn load_config(is_local: bool) -> Config {
+    let config_dir = if is_local {
+        env::current_dir().unwrap_or_else(
+            |_| {
+                print_error(format!("config directory is not defined"));
+                process::exit(1);
+            }
+        ).to_string_lossy().to_string()
+    } else {
+        dirs::config_dir().unwrap_or_else(
+            || {
+                print_error(format!("config directory is not defined"));
+                process::exit(1);
+            }
+        ).to_string_lossy().to_string() + "/acc"
+    };
+    let config_path: &str = &(config_dir.clone() + "/config.toml");
+
+    if !is_local {
+        let output = Command::new("test")
+            .args(&["-d", &config_dir])
+            .output()
+            .expect("failed to execute process");
+        if !output.status.success() {
+            let _ = Command::new("mkdir")
+                .args(&["-p", &config_dir])
+                .output()
+                .expect("failed to execute process");
+            let mut file = fs::File::create(config_path).unwrap();
+            file.write_all(DEFAULT_CONFIG.as_bytes()).unwrap();
+        }
     }
 
     let content = fs::read_to_string(config_path).unwrap();

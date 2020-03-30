@@ -33,7 +33,7 @@ pub fn run(matches: &ArgMatches) {
     let _ = make_dir(dir_name.to_string() + "/testcase");
 
     /* 拡張子が設定されているならその分のファイルを作成 */
-    let config = util::load_config().init;
+    let config = util::load_config(true).init;
     if let Some(extension) = config.extension {
         let total_file = config.total_task.unwrap();
         let files = (b'A'..=b'Z').take(total_file as usize)
