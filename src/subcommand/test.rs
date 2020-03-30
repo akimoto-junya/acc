@@ -165,7 +165,7 @@ pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_nam
     // すでにテストケースがあるならそれを返す
     if testcase_path.exists() {
         let testcase_path = testcase_path.to_str().unwrap();
-        let content = fs::read_to_string(testcase_path).unwrap();
+        let content = util::read_file(testcase_path);
         let file: TestcaseFile = toml::from_str(&content).unwrap_or_else(|_|{
             util::print_error("testcase file is wrong");
             process::exit(1);
