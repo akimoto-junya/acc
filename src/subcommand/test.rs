@@ -17,10 +17,11 @@ const TESTCASE_PATTERN: &str = r#"<span class="lang-ja"><h3></h3><pre>{{io}}</pr
 
 #[derive(Copy, Clone, Eq)]
 enum Status {
-    AC = 0,
+    AC  = 0,
     TLE = 1,
-    WA = 2,
-    CE = 3,
+    RE  = 2,
+    WA  = 3,
+    CE  = 4,
 }
 
 impl Ord for Status {
@@ -44,10 +45,11 @@ impl PartialEq for Status {
 impl Status {
     fn to_string(&self) -> String {
         match self {
-            Status::AC => colortext::AC.to_string(),
+            Status::AC  => colortext::AC.to_string(),
             Status::TLE => colortext::TLE.to_string(),
-            Status::WA => colortext::WA.to_string(),
-            Status::CE => colortext::CE.to_string(),
+            Status::RE  => colortext::RE.to_string(),
+            Status::WA  => colortext::WA.to_string(),
+            Status::CE  => colortext::CE.to_string(),
         }
     }
 }
@@ -114,7 +116,7 @@ fn compile(config: &Test, task_name: &str) {
     println!("{}: compiled successfully\n", colortext::INFO);
 }
 
-fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) -> Option<String> {
+fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) -> (bool, Option<String>) {
     let input = Command::new("echo")
         .args(&["-e", "-n"])
         .arg(testcase_input)
@@ -133,16 +135,19 @@ fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) 
     let start = time::Instant::now();
     loop {
         match command_child.try_wait() {
-            Ok(Some(_status)) => {
+            Ok(Some(status)) => {
+                if !status.success() {
+                    return (true, None)
+                }
                 let output = command_child.stdout.unwrap();
                 let output = Command::new("cat").stdin(output).output().unwrap();
-                return Some(String::from_utf8_lossy(&output.stdout).to_string())
+                return (false, Some(String::from_utf8_lossy(&output.stdout).to_string()))
             },
             Ok(None) => {
                 let duration = start.elapsed().as_millis();
                 if duration > tle_time.into() {
                     let _ = command_child.kill().expect("command wasn't running");
-                    return None
+                    return (false, None)
                 }
             },
             Err(_e) => {
@@ -224,10 +229,15 @@ pub fn run(matches: &ArgMatches) {
     println!("{}: starting test ...", colortext::INFO);
     for (input, output) in inputs.iter().zip(outputs.iter()) {
         count += 1;
-        print!(" - testcase {} ... ", count);
+        print!("- testcase {} ... ", count);
 
         let tle_time = config.tle_time.unwrap_or(3000);
-        let result = execute(&config, task_name, input, tle_time);
+        let (caused_runtime_error, result) = execute(&config, task_name, input, tle_time);
+        if caused_runtime_error {
+            all_result = all_result.max(Status::RE);
+            println!("{}\n", colortext::RE);
+            continue;
+        }
         if result.is_none() {
             all_result = all_result.max(Status::TLE);
             println!("{}", colortext::TLE);
