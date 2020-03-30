@@ -1,4 +1,3 @@
-use std::process::Command;
 use clap::{App, ArgMatches, SubCommand, Arg};
 
 pub const NAME: &str = "config";

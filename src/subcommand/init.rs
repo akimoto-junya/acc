@@ -2,7 +2,6 @@ use std::{process, env};
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
-use std::process::Command;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use crate::colortext;
 use crate::util;
@@ -63,7 +62,6 @@ pub fn run(matches: &ArgMatches) {
         config.extension
     };
     if let Some(extension) = extension {
-        println!("{}", extension);
         let total_file = config.total_task.unwrap();
         let files = (b'A'..=b'Z').take(total_file as usize)
             .map(|c| c as char)

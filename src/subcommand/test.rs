@@ -1,7 +1,7 @@
 use std::{env, time, process, thread, fs};
 use std::fs::File;
 use std::io::Write;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::cmp::Ordering;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use easy_scraper::Pattern;
@@ -235,7 +235,7 @@ pub fn run(matches: &ArgMatches) {
         let (caused_runtime_error, result) = execute(&config, task_name, input, tle_time);
         if caused_runtime_error {
             all_result = all_result.max(Status::RE);
-            println!("{}\n", colortext::RE);
+            println!("{}", colortext::RE);
             continue;
         }
         if result.is_none() {

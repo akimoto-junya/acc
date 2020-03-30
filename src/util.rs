@@ -1,7 +1,6 @@
 use std::{fs, process, env};
 use std::io::prelude::*;
 use std::path::Path;
-use std::process::Command;
 use crate::colortext;
 use crate::config::{Config, Overridable};
 
