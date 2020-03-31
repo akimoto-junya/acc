@@ -1,19 +1,16 @@
 use std::{env, time, process, thread, fs};
 use std::fs::File;
 use std::io::Write;
-use std::process::Stdio;
+use std::process::{Stdio, Command};
 use std::cmp::Ordering;
+use reqwest::{Client, ClientBuilder};
 use clap::{App, ArgMatches, SubCommand, Arg};
 use easy_scraper::Pattern;
 use serde::{Deserialize, Serialize};
-use reqwest::blocking;
 use crate::{util, colortext};
 use crate::config::Test;
 
 pub const NAME: &str = "test";
-const URL_TEMPLATE: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST>_<TASK>";
-const TESTCASE_PATTERN: &str = r#"<span class="lang-ja"><h3></h3><pre>{{io}}</pre></span>"#;
-
 
 #[derive(Copy, Clone, Eq)]
 enum Status {
@@ -159,7 +156,7 @@ fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) 
     }
 }
 
-pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_name: T) -> (Vec<String>, Vec<String>) {
+pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_name: T, username: &str, password: &str) -> (Vec<String>, Vec<String>) {
     let contest_name = contest_name.into();
     let task_name = task_name.into();
     let mut path = env::current_dir().unwrap();
@@ -181,15 +178,17 @@ pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_nam
     }
 
     // テストケースをAtCoderから取得
-    let url = URL_TEMPLATE.to_string();
+    let client = Client::builder().cookie_store(true).user_agent("acc/1.0.0").build().unwrap();
+    let url = util::LOGIN_URL;
+    util::login_atcoder(&url, &client, username, password);
+    let url = util::TASK_URL.to_string();
     let url = url.replace("<CONTEST>", &contest_name);
     let url = url.replace("<TASK>", &task_name.to_lowercase());
-    let document = blocking::get(&url).unwrap_or_else(|_| {
-        util::print_error(format!("{} is wrong", url));
+    let document = util::get_page(&url, &client).unwrap_or_else(|| {
+        util::print_error("url in wrong");
         process::exit(1);
     });
-    let document = document.text().unwrap();
-    let pattern = Pattern::new(TESTCASE_PATTERN).unwrap();
+    let pattern = Pattern::new(util::TESTCASE_PATTERN).unwrap();
     let io_cases = pattern.matches(&document);
     if io_cases.len() % 2 != 0 {
         util::print_error("The correct test case could not be get");
@@ -213,6 +212,14 @@ pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_nam
 pub fn run(matches: &ArgMatches) {
     let task_name = matches.value_of("TASK_NAME").unwrap();
     let config = util::load_config(true);
+    let username = config.user.username;
+    let password = config.user.password;
+    if username.is_none() || password.is_none() {
+        util::print_error("username (or/and) password in config.toml is not defined");
+        process::exit(1);
+    }
+    let username = username.unwrap();
+    let password = password.unwrap();
     let contest_name = config.contest.unwrap_or_else( ||{
         util::print_error("contest_name in local config.toml is not defined");
         process::exit(1);
@@ -225,7 +232,7 @@ pub fn run(matches: &ArgMatches) {
 
     let mut all_result = Status::AC;
     let mut count = 0;
-    let (inputs, outputs) = get_testcases(contest_name, task_name);
+    let (inputs, outputs) = get_testcases(contest_name, task_name, &username, &password);
     println!("{}: starting test ...", colortext::INFO);
     for (input, output) in inputs.iter().zip(outputs.iter()) {
         count += 1;
