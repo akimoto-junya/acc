@@ -1,9 +1,7 @@
 use std::{fs, process, env};
 use std::io::prelude::*;
 use std::path::Path;
-use std::collections::HashMap;
 use reqwest::Client;
-use reqwest::header::HeaderMap;
 use easy_scraper::Pattern;
 use crate::colortext;
 use crate::config::{Config, Overridable};

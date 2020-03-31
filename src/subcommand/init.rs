@@ -3,7 +3,6 @@ use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
 use clap::{App, ArgMatches, SubCommand, Arg};
-use crate::colortext;
 use crate::util;
 
 pub const NAME: &str = "init";

@@ -1,5 +1,5 @@
 extern crate acc;
-use clap::{Arg, App};
+use clap::App;
 use acc::subcommand;
 
 fn main() {
