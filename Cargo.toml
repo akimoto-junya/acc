@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Takachiha <akimoto14301@gmail.com>"]
 edition = "2018"
 license = "MIT"
+repository = "https://github.com/Takachiha/acc"
+description = "command for atcoder"
+readme = "README.md"
+
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
