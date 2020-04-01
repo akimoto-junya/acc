@@ -1,5 +1,4 @@
-use std::{env, fs, process};
-use std::io::prelude::*;
+use std::{env, process};
 use clap::{App, ArgMatches, SubCommand, Arg};
 use reqwest::Client;
 use crate::util;

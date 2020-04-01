@@ -3,7 +3,7 @@ use clap::App;
 use acc::subcommand;
 
 fn main() {
-    let matches = App::new("atcj")
+    let matches = App::new("acc")
         .version("v1.0.0")
         .subcommand(subcommand::init::get_command())
         .subcommand(subcommand::submit::get_command())
