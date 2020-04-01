@@ -1,7 +1,26 @@
 # acc
 AtCoderのテストや提出するやつ
 
-## Usage
+## ディレクトリ構成
+```
+<CONTEST_DIR>/
+├── A.cpp
+├── B.cpp
+├── C.cpp
+├── D.cpp
+├── E.cpp
+├── F.cpp
+├── config.toml
+└── testcase
+    ├── A.toml
+    ├── B.toml
+    ├── C.toml
+    ├── D.toml
+    ├── E.toml
+    └── F.toml
+```
+
+## 使い方
 
 ### ユーザ情報設定
 以下のコマンドでAtCoderのユーザ名とパスワードを登録
@@ -26,7 +45,7 @@ $ acc init -e py -lang 3023 abc160
 オプションは以下の通り，なお，オプションが指定されていないときは\<config\_dir\>/acc/config.tomlで指定された値で解決しようとする．
 
 | &nbsp;&nbsp;&nbsp;OPTION&nbsp;&nbsp;&nbsp; | 説明 |
-| :---: | :--- |
+| :--- | :--- |
 | -e <br>--extension | 最初に作成されるファイルの拡張子を指定する, \<config\_dir\>/acc/template.\<extension\>があればテンプレートとして使用される |
 | -l <br> --lang | AtCoderで提出するときの言語を指定する(詳細は後述) |
 
@@ -123,7 +142,7 @@ $ acc submit A
 ### 詳細
 
 | 項目 | 説明 |
-|:---: | :--- |
+| :--- | :--- |
 | contest | コンテスト名(コンテストプロジェクト内の設定) |
 | total\_task | acc init時に作成されるファイル数を指定(拡張子設定が無いと無効) |
 | extension | ファイルの拡張子を指定 |
@@ -138,7 +157,7 @@ $ acc submit A
 
 ### 設定例
 \<config\_dir\>/acc/config.tomlの例
-
+\<TASK\>はacc testで指定したものを代入するためのもの
 #### C++
 
 ```toml
