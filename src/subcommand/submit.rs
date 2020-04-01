@@ -8,7 +8,7 @@ pub const NAME: &str = "submit";
 
 pub fn get_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(&NAME)
-        .about("Submit atcoder ")
+        .about("Submits source code to AtCoder")
         .arg(Arg::with_name("TASK_NAME")
             .required(true)
             .index(1))
