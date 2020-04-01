@@ -4,11 +4,12 @@ AtCoderのテストや提出するやつ
 ## Usage
 
 ### ユーザ情報設定
-以下のコマンドでAtCoderのユーザ名とパスワードを登録[^1]
+以下のコマンドでAtCoderのユーザ名とパスワードを登録
 ```bash
 $ acc config <USERNAME> <PASSWORD>
 ```
-[^1] \<config\_dir\>/acc/userdata.tomlが作成されその中に保存される
+- \<config\_dir\>/acc/userdata.tomlが作成されその中に保存される
+---
 
 ### コンテストプロジェクト作成
 \<config\_dir\>/acc/config.tomlとコマンドオプションなどをもとにコンテストのプロジェクトを作成する．
@@ -26,8 +27,8 @@ $ acc init -e py -lang 3023 abc160
 
 | OPTION | 説明 |
 | :---: | :--- |
-| -e --extension | 最初に作成されるファイルの拡張子を指定する, \<config\_dir\>/acc/template.\<extension\>があればテンプレートとして使用される |
-| -l --lang | AtCoderで提出するときの言語を指定する(詳細は後述) |
+| -e <br>--extension | 最初に作成されるファイルの拡張子を指定する, \<config\_dir\>/acc/template.\<extension\>があればテンプレートとして使用される |
+| -l <br> --lang | AtCoderで提出するときの言語を指定する(詳細は後述) |
 
 -l --lang で指定する値の詳細
 | 使用する言語 | 指定する値 |
@@ -89,9 +90,10 @@ $ acc init -e py -lang 3023 abc160
 | COBOL - Fixed (OpenCOBOL 1.1.0) | 3525 |
 | COBOL - Free (OpenCOBOL 1.1.0) | 3526 |
 
+---
 
 ### テスト
-ソースコードのテストを行う.[^2]
+ソースコードのテストを行う.
 
 ```bash
 $ acc test <TASK>
@@ -100,9 +102,11 @@ ex )
 $ acc test A
 ```
 
-[^2] コンテストディレクトリ内で実行を行う必要がある．
-[^2] 初回実行時AtCoderからテストを取得し，プロジェクト内にtestcase/\<TASK\>.tomlとして保存する．
-[^2] テストケースを追加したい場合は，testcaseディレクトリ内のファイルを編集することで対応できる
+- コンテストディレクトリ内で実行を行う必要がある．
+- 初回実行時AtCoderからテストを取得し，プロジェクト内にtestcase/\<TASK\>.tomlとして保存する．
+- テストケースを追加したい場合は，testcaseディレクトリ内のファイルを編集することで対応できる
+
+---
 
 ### 提出
 ソースコードの提出を行う．
@@ -113,6 +117,7 @@ $ acc submit <TASK>
 ex )
 $ acc submit A
 ```
+---
 
 ## 設定
 ### 詳細
@@ -129,7 +134,9 @@ $ acc submit A
 | test.command\_arg | コマンドを実行するときのarg指定 |
 | test.tle\_time | TLEの時間指定[ms] |
 
-### 例
+---
+
+### 設定例
 \<config\_dir\>/acc/config.tomlの例
 
 #### C++
