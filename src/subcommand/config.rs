@@ -20,16 +20,17 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
 pub fn run(matches: &ArgMatches) {
     let username = matches.value_of("USERNAME").unwrap();
     let password = matches.value_of("PASSWORD").unwrap();
-    let mut config = util::load_config(false);
-    let config_path = dirs::config_dir().unwrap_or_else(|| {
+    let _ = util::load_config(false); // 初回時config.toml作成
+    let mut userdata = util::load_userdata();
+    let userdata_path = dirs::config_dir().unwrap_or_else(|| {
             util::print_error("config directory is not defined");
             process::exit(1)
-        }).to_string_lossy().to_string() + "/acc/config.toml";
-    config.user.username = Some(username.to_string());
-    config.user.password = Some(password.to_string());
-    let mut config_file = File::create(config_path).unwrap();
-    let content = toml::to_string(&config).unwrap();
-    config_file.write_all(content.as_bytes()).unwrap_or_else(|_| {
+        }).to_string_lossy().to_string() + "/acc/userdata.toml";
+    userdata.username = Some(username.to_string());
+    userdata.password = Some(password.to_string());
+    let mut userdata_file = File::create(userdata_path).unwrap();
+    let content = toml::to_string(&userdata).unwrap();
+    userdata_file.write_all(content.as_bytes()).unwrap_or_else(|_| {
         util::print_error("failed to write to config");
         process::exit(1);
     });

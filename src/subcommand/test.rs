@@ -1,9 +1,9 @@
-use std::{env, time, process, thread, fs};
+use std::{env, time, process, thread};
 use std::fs::File;
 use std::io::Write;
 use std::process::{Stdio, Command};
 use std::cmp::Ordering;
-use reqwest::{Client, ClientBuilder};
+use reqwest::Client;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use easy_scraper::Pattern;
 use serde::{Deserialize, Serialize};
@@ -12,6 +12,7 @@ use crate::config::Test;
 
 pub const NAME: &str = "test";
 
+#[allow(dead_code)]
 #[derive(Copy, Clone, Eq)]
 enum Status {
     AC  = 0,
@@ -92,7 +93,7 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
 fn compile(config: &Test, task_name: &str) {
     let compiler = config.compiler.as_ref().unwrap();
     if config.compile_arg.is_none() {
-        util::print_error("\"compile_arg\" in config.toml is not defined");
+        util::print_error("compile_arg in config.toml is not defined");
         process::exit(1);
     }
     println!("{}: starting compile", colortext::INFO);
@@ -180,12 +181,12 @@ pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_nam
     // テストケースをAtCoderから取得
     let client = Client::builder().cookie_store(true).user_agent("acc/1.0.0").build().unwrap();
     let url = util::LOGIN_URL;
-    util::login_atcoder(&url, &client, username, password);
+    let _ = util::login_atcoder(url, &client, username, password);
     let url = util::TASK_URL.to_string();
     let url = url.replace("<CONTEST>", &contest_name);
     let url = url.replace("<TASK>", &task_name.to_lowercase());
     let document = util::get_page(&url, &client).unwrap_or_else(|| {
-        util::print_error("url in wrong");
+        util::print_error("The correct test case could not be get");
         process::exit(1);
     });
     let pattern = Pattern::new(util::TESTCASE_PATTERN).unwrap();
@@ -212,8 +213,9 @@ pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_nam
 pub fn run(matches: &ArgMatches) {
     let task_name = matches.value_of("TASK_NAME").unwrap();
     let config = util::load_config(true);
-    let username = config.user.username;
-    let password = config.user.password;
+    let userdata = util::load_userdata();
+    let username = userdata.username;
+    let password = userdata.password;
     if username.is_none() || password.is_none() {
         util::print_error("username (or/and) password in config.toml is not defined");
         process::exit(1);
