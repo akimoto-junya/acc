@@ -25,7 +25,7 @@ $ acc init -e py -lang 3023 abc160
 
 オプションは以下の通り，なお，オプションが指定されていないときは\<config\_dir\>/acc/config.tomlで指定された値で解決しようとする．
 
-| OPTION | 説明 |
+| &nbsp;&nbsp;&nbsp;OPTION&nbsp;&nbsp;&nbsp; | 説明 |
 | :---: | :--- |
 | -e <br>--extension | 最初に作成されるファイルの拡張子を指定する, \<config\_dir\>/acc/template.\<extension\>があればテンプレートとして使用される |
 | -l <br> --lang | AtCoderで提出するときの言語を指定する(詳細は後述) |
