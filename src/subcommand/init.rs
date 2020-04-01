@@ -19,12 +19,19 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
             .help("Sets a init file extension")
             .takes_value(true)
             .value_name("EXT"))
+        .arg(Arg::with_name("language_id")
+            .short("l")
+            .long("lang")
+            .help("Sets a language id")
+            .takes_value(true)
+            .value_name("LANGUAGE_ID"))
 }
 
 
 pub fn run(matches: &ArgMatches) {
     let dir_name = matches.value_of("DIR_NAME").unwrap();
     let extension = matches.value_of("extension");
+    let language_id = matches.value_of("language_id");
     let path = env::current_dir().unwrap();
     let path = path.to_str().unwrap();
     let config = util::load_config(false);
@@ -36,22 +43,28 @@ pub fn run(matches: &ArgMatches) {
     }
     let _ = util::make_dir(&[dir_name , "testcase"].join("/"));
 
-    // コンテスト名, 拡張子を追記してローカルに保存
+    // コンテスト名, 拡張子, 言語IDを追記してローカルに保存
     let local_config_path = [path, dir_name, "config.toml"].join("/");
     let mut overriding_config = config.clone();
     overriding_config.contest = Some(dir_name.to_string());
     if let Some(extension) = extension {
-        overriding_config.init.extension = Some(extension.to_string());
+        overriding_config.extension = Some(extension.to_string());
+    }
+    if let Some(language_id) = language_id {
+        let language_id: u16 = language_id.parse().unwrap_or_else(|_| {
+            util::print_error("language_id is wrong");
+            process::exit(1);
+        });
+        overriding_config.language_id = Some(language_id);
     }
     let content = toml::to_string(&overriding_config).unwrap();
     let mut local_config_file = File::create(local_config_path).unwrap();
     local_config_file.write_all(content.as_bytes()).unwrap_or_else(|_| {
-            util::print_error("failed to create local config");
-            process::exit(1);
+        util::print_error("failed to create local config");
+        process::exit(1);
     });
 
     // 拡張子が設定されているならその分のファイルを作成
-    let config = config.init;
     let extension = if extension.is_some() {
         match extension {
             Some(ext) => Some(ext.to_string()),
