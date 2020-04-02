@@ -37,7 +37,7 @@ $ acc config <USERNAME> <PASSWORD>
 $ acc init [OPTION] <DIR_NAME>
 
 ex )
-$ acc init -e py -lang 3023 abc160
+$ acc init -e py -l 3023 abc160
 ```
 
 基本的にディレクトリ名をコンテスト名として使用するため，ディレクトリと異なるコンテストディレクトリを作成したい場合は，コマンド実行後にコンテストディレクトリ内のconfig.tomlを編集する必要がある．
