@@ -227,7 +227,7 @@ pub fn run(matches: &ArgMatches) {
         process::exit(1);
     });
     let config = config.test;
-
+    let needs_print = config.print_wrong_answer.unwrap();
     if config.compiler.is_some() {
         compile(&config, task_name);
     }
@@ -262,6 +262,11 @@ pub fn run(matches: &ArgMatches) {
             colortext::WA
         };
         println!("{}", status);
+        if !is_correct && needs_print {
+            println!("*** wrong answer ***");
+            println!("{}", result);
+            println!("********************");
+        }
     }
     println!("result: {}", all_result.to_string());
 }
