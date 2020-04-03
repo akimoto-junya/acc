@@ -152,6 +152,7 @@ $ acc submit A
 | test.command | 実行するコマンドを指定 |
 | test.command\_arg | コマンドを実行するときのarg指定 |
 | test.tle\_time | TLEの時間指定[ms] |
+| test.print\_wrong\_answer | WAのときの出力 |
 
 ---
 
@@ -170,6 +171,7 @@ compiler = "g++"
 compile_arg = "<TASK>.cpp -o <TASK>"
 command = "./<TASK>"
 tle_time = 3000
+print_wrong_answer = true
 ```
 
 #### Python3
@@ -183,4 +185,5 @@ language_id = 3023
 command = "python3"
 command_arg = "<TASK>.py"
 tle_time = 3000
+print_wrong_answer = true
 ```
