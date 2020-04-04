@@ -13,7 +13,9 @@ language_id = 3003
 [test]
 compiler = "g++"
 compile_arg = "<TASK>.cpp -o <TASK>"
-command = "./<TASK>""#;
+command = "./<TASK>"
+print_wrong_answer = true
+"#;
 
 pub const LOGIN_URL: &str = "https://atcoder.jp/login";
 pub const TASK_URL: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST>_<TASK>";
