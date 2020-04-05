@@ -219,7 +219,7 @@ $ acc submit A
 |           項目            |             型              |                              説明                              |
 | :------------------------ | :-------------------------- | -------------------------------------------------------------- |
 | contest                   | String                      | コンテスト名(コンテストプロジェクト内の設定)                   |
-| contest\_task\_name         | String                      | URLのタスク部分のコンテスト名                                   |
+| contest\_task\_name         | String                      | URLのタスク部分のコンテスト名(contestと異なるとき指定)        |
 | total\_task               | Integer(符号なし8ビット)    | acc init時に作成されるファイル数を指定(拡張子設定が無いと無効) |
 | extension                 | String                      | ファイルの拡張子を指定                                         |
 | language\_id              | Integer(符号なし１６ビット) | AtCoderの言語指定                                              |
