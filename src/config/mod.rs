@@ -9,6 +9,7 @@ pub mod user;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Config {
     pub contest: Option<String>,
+    pub contest_task_name: Option<String>,
     pub total_task: Option<u8>,
     pub extension: Option<String>,
     pub language_id: Option<u16>,

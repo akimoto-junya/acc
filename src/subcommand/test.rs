@@ -157,9 +157,7 @@ fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) 
     }
 }
 
-pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_name: T, username: &str, password: &str) -> (Vec<String>, Vec<String>) {
-    let contest_name = contest_name.into();
-    let task_name = task_name.into();
+pub fn get_testcases(contest_name: &str, contest_task_name: Option<String>,  task_name: &str, username: &str, password: &str) -> (Vec<String>, Vec<String>) {
     let mut path = env::current_dir().unwrap();
     path.push("testcase");
     path.push([&task_name, "toml"].join("."));
@@ -184,6 +182,11 @@ pub fn get_testcases<S: Into<String>, T: Into<String>>(contest_name: S, task_nam
     let _ = util::login_atcoder(url, &client, username, password);
     let url = util::TASK_URL.to_string();
     let url = url.replace("<CONTEST>", &contest_name);
+    let url = if let Some(contest_task_name) = contest_task_name {
+        url.replace("<CONTEST_TASK>", &contest_task_name)
+    } else {
+        url.replace("<CONTEST_TASK>", &contest_name)
+    };
     let url = url.replace("<TASK>", &task_name.to_lowercase());
     let document = util::get_page(&url, &client).unwrap_or_else(|| {
         util::print_error("The correct test case could not be get");
@@ -216,6 +219,7 @@ pub fn run(matches: &ArgMatches) {
     let userdata = util::load_userdata();
     let username = userdata.username;
     let password = userdata.password;
+    let contest_task_name = config.contest_task_name;
     if username.is_none() || password.is_none() {
         util::print_error("username (or/and) password in config.toml is not defined");
         process::exit(1);
@@ -234,7 +238,7 @@ pub fn run(matches: &ArgMatches) {
 
     let mut all_result = Status::AC;
     let mut count = 0;
-    let (inputs, outputs) = get_testcases(contest_name, task_name, &username, &password);
+    let (inputs, outputs) = get_testcases(&contest_name, contest_task_name, &task_name, &username, &password);
     println!("{}: starting test ...", colortext::INFO);
     for (input, output) in inputs.iter().zip(outputs.iter()) {
         count += 1;

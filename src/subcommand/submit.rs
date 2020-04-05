@@ -23,6 +23,7 @@ fn get_source(file_name: &str) -> String {
 pub fn run(matches: &ArgMatches) {
     let task_name = matches.value_of("TASK_NAME").unwrap();
     let config = util::load_config(true);
+    let contest_task_name = config.contest_task_name;
     let extension = config.extension.unwrap_or_else(|| {
         util::print_error("extension in config.toml is not defined");
         process::exit(1);
@@ -51,7 +52,12 @@ pub fn run(matches: &ArgMatches) {
     let token = util::login_atcoder(url, &client, &username, &password);
     let url = util::SUBMIT_URL.to_string();
     let url = url.replace("<CONTEST>", &contest_name);
-    let screen_name = format!("{}_{}", &contest_name, task_name.to_lowercase());
+    let task = if let Some(contest_task_name) = contest_task_name {
+        contest_task_name
+    } else {
+        contest_name
+    };
+    let screen_name = format!("{}_{}", &task, task_name.to_lowercase());
     let source = get_source(&file_name);
     let form_data = vec![
         ("csrf_token", token),
