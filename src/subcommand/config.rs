@@ -10,20 +10,12 @@ pub const NAME: &str = "config";
 pub fn get_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(&NAME)
         .about("Sets username and password to config_dir/config.toml")
-//        .arg(Arg::with_name("USERNAME")
-//            .required(true)
-//            .index(1))
-//        .arg(Arg::with_name("PASSWORD")
-//             .required(true)
-//             .index(2))
 }
 
 pub fn run(_matches: &ArgMatches) {
-//    let username = matches.value_of("USERNAME").unwrap();
-//    let password = matches.value_of("PASSWORD").unwrap();
     print!("username:");
     std::io::stdout().flush().unwrap();
-    let mut username = read_password().unwrap();
+    let username = read_password().unwrap();
     println!("{}", username);
     let mut password = String::new();
     let mut password2 = String::new();
