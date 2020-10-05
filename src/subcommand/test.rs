@@ -9,6 +9,7 @@ use easy_scraper::Pattern;
 use serde::{Deserialize, Serialize};
 use crate::{util, colortext};
 use crate::config::Test;
+use regex::Regex;
 
 pub const NAME: &str = "test";
 
@@ -194,12 +195,16 @@ pub fn get_testcases(contest_name: &str, contest_task_name: Option<String>,  tas
     });
     let pattern = Pattern::new(util::TESTCASE_PATTERN).unwrap();
     let io_cases = pattern.matches(&document);
-    if io_cases.len() % 2 != 0 {
-        util::print_error("The correct test case could not be get");
-        process::exit(1);
-    }
-    let inputs: Vec<String> = io_cases.iter().step_by(2).map(|x| x["io"].clone()).collect();
-    let outputs: Vec<String> = io_cases.iter().skip(1).step_by(2).map(|x| x["io"].clone()).collect();
+    let re = Regex::new(r"<h3>((.|\n)*)</h3><pre>(?P<io>(.|\n)*)</pre>").unwrap();
+    let testcases: Vec<String> = io_cases.iter()
+                    .map(|x| re.captures(&x["io"]))
+                    .filter(Option::is_some)
+                    .map(|x| x.unwrap().name("io"))
+                    .filter(Option::is_some)
+                    .map(|x| x.unwrap().as_str().to_string())
+                    .collect();
+    let inputs: Vec<String> = testcases.iter().step_by(2).cloned().collect();
+    let outputs: Vec<String> = testcases.iter().skip(1).step_by(2).cloned().collect();
 
     // テストケースファイルの作成
     let mut testcases = Vec::<Testcase>::new();

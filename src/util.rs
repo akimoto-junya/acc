@@ -20,7 +20,8 @@ print_wrong_answer = true
 pub const LOGIN_URL: &str = "https://atcoder.jp/login";
 pub const TASK_URL: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST_TASK>_<TASK>";
 pub const SUBMIT_URL: &str = "https://atcoder.jp/contests/<CONTEST>/submit";
-pub const TESTCASE_PATTERN: &str = r#"<span class="lang-ja"><h3></h3><pre>{{io}}</pre></span>"#;
+//pub const TESTCASE_PATTERN: &str = r#"<span class="lang-ja"><h3></h3><pre>{{io}}</pre></span>"#;
+pub const TESTCASE_PATTERN: &str = r#"<span class="lang-ja"><div class="part"><section>{{io:*}}</section></div></span>"#;
 pub const CSRF_TOKEN_PATTERN: &str = r#"<input type="hidden" name="csrf_token" value={{token}} />"#;
 
 pub fn print_error<S: Into<String>>(error_message: S) {
