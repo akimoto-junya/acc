@@ -4,6 +4,7 @@ use std::io::prelude::*;
 use std::path::Path;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use crate::util;
+use crate::colortext;
 
 pub const NAME: &str = "init";
 
@@ -25,6 +26,12 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
             .help("Sets a language id")
             .takes_value(true)
             .value_name("LANGUAGE_ID"))
+        .arg(Arg::with_name("total_task")
+            .short("t")
+            .long("total")
+            .help("Sets a number of tasks")
+            .takes_value(true)
+            .value_name("TOTAL"))
 }
 
 
@@ -32,6 +39,7 @@ pub fn run(matches: &ArgMatches) {
     let dir_name = matches.value_of("DIR_NAME").unwrap();
     let extension = matches.value_of("extension");
     let language_id = matches.value_of("language_id");
+    let total_task = matches.value_of("total_task");
     let path = env::current_dir().unwrap();
     let path = path.to_str().unwrap();
     let config = util::load_config(false);
@@ -74,7 +82,14 @@ pub fn run(matches: &ArgMatches) {
         config.extension
     };
     if let Some(extension) = extension {
-        let total_file = config.total_task.unwrap();
+        let total_file = if total_task.is_some() {
+            total_task.unwrap().parse().unwrap_or_default()
+        } else {
+            config.total_task.unwrap()
+        };
+        if total_file <= 0 {
+            println!("{}: TOTAL_TASK can not set", colortext::WARNING);
+        }
         let files = (b'A'..=b'Z').take(total_file as usize)
             .map(|c| c as char)
             .map(|file| [file.to_string(), extension.clone()].join("."))
