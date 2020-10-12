@@ -8,6 +8,7 @@ fn main() {
         .subcommand(subcommand::init::get_command())
         .subcommand(subcommand::submit::get_command())
         .subcommand(subcommand::test::get_command())
+        .subcommand(subcommand::watch::get_command())
         .subcommand(subcommand::config::get_command())
         .get_matches();
     match matches.subcommand() {
@@ -19,6 +20,9 @@ fn main() {
         },
         (subcommand::test::NAME, Some(matches)) => {
             subcommand::test::run(matches);
+        },
+        (subcommand::watch::NAME, Some(matches)) => {
+            subcommand::watch::run(matches);
         },
         (subcommand::config::NAME, Some(matches)) => {
             subcommand::config::run(matches);

@@ -20,3 +20,5 @@ reqwest = { version = "0.10", features = ["cookies"] }
 tokio = { version = "0.2", features = ["full"] }
 rpassword = "5.0.0"
 regex = "1"
+notify = "4.0.15"
+chrono = "0.4"
