@@ -7,9 +7,9 @@ use reqwest::Client;
 use clap::{App, ArgMatches, SubCommand, Arg};
 use easy_scraper::Pattern;
 use serde::{Deserialize, Serialize};
+use regex::Regex;
 use crate::{util, colortext};
 use crate::config::Test;
-use regex::Regex;
 
 pub const NAME: &str = "test";
 
@@ -218,39 +218,20 @@ pub fn get_testcases(contest_name: &str, contest_task_name: Option<String>,  tas
     (inputs, outputs)
 }
 
-pub fn run(matches: &ArgMatches) {
-    let task_name = matches.value_of("TASK_NAME").unwrap();
-    let config = util::load_config(true);
-    let userdata = util::load_userdata();
-    let username = userdata.username;
-    let password = userdata.password;
-    let contest_task_name = config.contest_task_name;
-    if username.is_none() || password.is_none() {
-        util::print_error("username (or/and) password in config.toml is not defined");
-        process::exit(1);
-    }
-    let username = username.unwrap();
-    let password = password.unwrap();
-    let contest_name = config.contest.unwrap_or_else( ||{
-        util::print_error("contest_name in local config.toml is not defined");
-        process::exit(1);
-    });
-    let config = config.test;
+pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config: &Test) {
+    let mut all_result = Status::AC;
+    let mut count = 0;
     let needs_print = config.print_wrong_answer.unwrap();
     if config.compiler.is_some() {
         compile(&config, task_name);
     }
-
-    let mut all_result = Status::AC;
-    let mut count = 0;
-    let (inputs, outputs) = get_testcases(&contest_name, contest_task_name, &task_name, &username, &password);
     println!("{}: starting test ...", colortext::INFO);
     for (input, output) in inputs.iter().zip(outputs.iter()) {
         count += 1;
         print!("- testcase {} ... ", count);
 
         let tle_time = config.tle_time.unwrap_or(3000);
-        let (caused_runtime_error, result) = execute(&config, task_name, input, tle_time);
+        let (caused_runtime_error, result) = execute(config, task_name, input, tle_time);
         if caused_runtime_error {
             all_result = all_result.max(Status::RE);
             println!("{}", colortext::RE);
@@ -278,4 +259,26 @@ pub fn run(matches: &ArgMatches) {
         }
     }
     println!("result: {}", all_result.to_string());
+}
+
+pub fn run(matches: &ArgMatches) {
+    let task_name = matches.value_of("TASK_NAME").unwrap();
+    let config = util::load_config(true);
+    let userdata = util::load_userdata();
+    let username = userdata.username;
+    let password = userdata.password;
+    let contest_task_name = config.contest_task_name;
+    if username.is_none() || password.is_none() {
+        util::print_error("username (or/and) password in config.toml is not defined");
+        process::exit(1);
+    }
+    let username = username.unwrap();
+    let password = password.unwrap();
+    let contest_name = config.contest.unwrap_or_else( ||{
+        util::print_error("contest_name in local config.toml is not defined");
+        process::exit(1);
+    });
+    let config = config.test;
+    let (inputs, outputs) = get_testcases(&contest_name, contest_task_name, &task_name, &username, &password);
+    test(&task_name, &inputs, &outputs, &config);
 }
