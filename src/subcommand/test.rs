@@ -91,11 +91,11 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
             .index(1))
 }
 
-fn compile(config: &Test, task_name: &str) {
+fn compile(config: &Test, task_name: &str) -> bool {
     let compiler = config.compiler.as_ref().unwrap();
     if config.compile_arg.is_none() {
         util::print_error("compile_arg in config.toml is not defined");
-        process::exit(1);
+        return false;
     }
     println!("{}: starting compile", colortext::INFO);
     let arg = config.compile_arg.as_ref().unwrap();
@@ -110,9 +110,10 @@ fn compile(config: &Test, task_name: &str) {
         let output = String::from_utf8_lossy(&output.stderr);
         util::print_error("failed to compile");
         println!("{}\n\nresult: {}", output, colortext::CE);
-        process::exit(1);
+        return false;
     }
     println!("{}: compiled successfully\n", colortext::INFO);
+    return true;
 }
 
 fn execute(config: &Test, task_name: &str, testcase_input: &str, tle_time: u16) -> (bool, Option<String>) {
@@ -223,7 +224,10 @@ pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config
     let mut count = 0;
     let needs_print = config.print_wrong_answer.unwrap();
     if config.compiler.is_some() {
-        compile(&config, task_name);
+        let is_completed = compile(&config, task_name);
+        if !is_completed {
+            return;
+        }
     }
     println!("{}: starting test ...", colortext::INFO);
     for (input, output) in inputs.iter().zip(outputs.iter()) {
