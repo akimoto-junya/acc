@@ -1,4 +1,4 @@
-use crate::acc_client::AccClient;
+use crate::acc_client::{self, AccClient};
 use crate::util;
 use clap::{App, ArgMatches, SubCommand};
 use rpassword::read_password;

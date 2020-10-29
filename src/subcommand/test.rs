@@ -169,6 +169,9 @@ pub fn get_testcases(
 ) -> (Vec<String>, Vec<String>) {
     let mut path = env::current_dir().unwrap();
     path.push("testcase");
+    if !path.exists() {
+        util::make_dir(path.to_str().unwrap());
+    }
     path.push([&task_name, "toml"].join("."));
     let testcase_path = path.as_path();
 
