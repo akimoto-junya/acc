@@ -1,6 +1,6 @@
 extern crate acc;
-use clap::App;
 use acc::subcommand;
+use clap::App;
 
 fn main() {
     let matches = App::new("acc")
@@ -9,24 +9,24 @@ fn main() {
         .subcommand(subcommand::submit::get_command())
         .subcommand(subcommand::test::get_command())
         .subcommand(subcommand::watch::get_command())
-        .subcommand(subcommand::config::get_command())
+        .subcommand(subcommand::login::get_command())
         .get_matches();
     match matches.subcommand() {
         (subcommand::init::NAME, Some(matches)) => {
             subcommand::init::run(matches);
-        },
+        }
         (subcommand::submit::NAME, Some(matches)) => {
             subcommand::submit::run(matches);
-        },
+        }
         (subcommand::test::NAME, Some(matches)) => {
             subcommand::test::run(matches);
-        },
+        }
         (subcommand::watch::NAME, Some(matches)) => {
             subcommand::watch::run(matches);
-        },
-        (subcommand::config::NAME, Some(matches)) => {
-            subcommand::config::run(matches);
         }
-        _ => {},
+        (subcommand::login::NAME, Some(matches)) => {
+            subcommand::login::run(matches);
+        }
+        _ => {}
     }
 }

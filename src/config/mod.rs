@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 pub use test::Test;
-pub use user::User;
 
+pub mod state;
 pub mod test;
-pub mod user;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Config {
