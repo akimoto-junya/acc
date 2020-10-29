@@ -4,10 +4,11 @@ use easy_scraper::Pattern;
 use reqwest::{header, Client, Response};
 use std::process;
 
-pub const USER_AGENT: &str = "acc/1.0.0";
+pub const USER_AGENT: &str = "acc/1.1.0";
 pub const LOGIN_URL: &str = "https://atcoder.jp/login";
 pub const TASK_URL: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST_TASK>_<TASK>";
 pub const SUBMIT_URL: &str = "https://atcoder.jp/contests/<CONTEST>/submit";
+pub const SUBMISSIONS_URL: &str = "https://atcoder.jp/contests/<CONTEST>/submissions/me";
 pub const TESTCASE_PATTERN: &str =
     r#"<span class="lang-ja"><div class="part"><section>{{io:*}}</section></div></span>"#;
 pub const CSRF_TOKEN_PATTERN: &str = r#"<input type="hidden" name="csrf_token" value={{token}} />"#;
@@ -76,7 +77,7 @@ impl AccClient {
         &self,
         url: &str,
         form_data: Vec<(&str, String)>,
-    ) -> Option<(String, Vec<Cookie>)> {
+    ) -> Option<(String, String, Vec<Cookie>)> {
         let mut form = reqwest::multipart::Form::new();
         for data in form_data {
             form = form.text(data.0.to_string(), data.1);
@@ -86,10 +87,11 @@ impl AccClient {
         let response = rt.block_on(task);
         if let Ok(response) = response {
             let cookies = extract_cookies(&response);
+            let url = response.url().to_string();
             let task = async { response.text().await };
             let content = rt.block_on(task);
             match content {
-                Ok(content) => Some((content, cookies)),
+                Ok(content) => Some((url, content, cookies)),
                 Err(_) => None,
             }
         } else {
@@ -127,7 +129,7 @@ impl AccClient {
         ];
         let result = self.post_form_data(url, form_data);
         match result {
-            Some(result) => Some((result.0, token, result.1)),
+            Some(result) => Some((result.1, token, result.2)),
             None => None,
         }
     }

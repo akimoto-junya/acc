@@ -23,11 +23,12 @@ AtCoderのテストや提出するやつ
 ## 使い方
 
 ### ユーザ情報設定
-以下のコマンドでAtCoderのユーザ名とパスワードを登録
+以下のコマンドでAtCoderにログイン
 ```bash
-$ acc config <USERNAME> <PASSWORD>
+$ acc login
 ```
-- \<config\_dir\>/acc/userdata.tomlが作成されその中に保存される
+- atcoderにログインするコマンド
+- バージョン1.0.0を使っていたならば\<config\_dir\>/acc/userdata.tomlを削除してください
 ---
 
 ### コンテストプロジェクト作成

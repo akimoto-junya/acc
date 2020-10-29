@@ -43,7 +43,7 @@ pub fn run(matches: &ArgMatches) {
     let task = if let Some(contest_task_name) = contest_task_name {
         contest_task_name
     } else {
-        contest_name
+        contest_name.clone()
     };
     let screen_name = format!("{}_{}", &task, task_name.to_lowercase());
     let source = get_source(&file_name);
@@ -52,14 +52,21 @@ pub fn run(matches: &ArgMatches) {
         process::exit(1);
     });
     let form_data = vec![
-        ("csrf_token", token),
+        ("csrf_token", token.clone()),
         ("sourceCode", source),
         ("data.LanguageId", language_id.to_string()),
         ("data.TaskScreenName", screen_name),
     ];
     let result = client.post_form_data(&url, form_data);
     if result.is_some() {
-        println!("OK");
+        let (url, _, cookies) = result.unwrap();
+        let correct_url = acc_client::SUBMISSIONS_URL.replace("<CONTEST>", &contest_name);
+        util::save_state(&token, cookies);
+        if &correct_url == &url { // submit後は自分の提出のページに遷移することを利用
+            println!("OK");
+        } else {
+            util::print_error("failed to submit source code");
+        }
     } else {
         util::print_error("failed to submit source code");
     }
