@@ -5,7 +5,8 @@ use reqwest::{header, Client, Response};
 use std::process;
 
 pub const USER_AGENT: &str = "acc/1.1.0";
-pub const LOGIN_URL: &str = "https://atcoder.jp/login";
+pub const LOGIN_URL: &str = "https://atcoder.jp/login?continue=https%3A%2F%2Fatcoder.jp%2Fcontests%2Fpractice%2Fsubmissions%2Fme";
+pub const PRACTICE_URL: &str = "https://atcoder.jp/contests/practice/submissions/me";
 pub const TASK_URL: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST_TASK>_<TASK>";
 pub const SUBMIT_URL: &str = "https://atcoder.jp/contests/<CONTEST>/submit";
 pub const SUBMISSIONS_URL: &str = "https://atcoder.jp/contests/<CONTEST>/submissions/me";
@@ -129,7 +130,8 @@ impl AccClient {
         ];
         let result = self.post_form_data(url, form_data);
         match result {
-            Some(result) => Some((result.1, token, result.2)),
+            // url, csrf_token, cookies
+            Some(result) => Some((result.0, token, result.2)),
             None => None,
         }
     }

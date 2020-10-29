@@ -33,12 +33,16 @@ pub fn run(_matches: &ArgMatches) {
     }
     /* ログインしてクッキーとcsrfトークンを保存する */
     let client = AccClient::new(false);
-    let (_, token, cookies) = client
+    let (url, token, cookies) = client
         .login_atcoder(&username, &password)
         .unwrap_or_else(|| {
             util::print_error("login failire");
             process::exit(1);
         });
+    if &url != acc_client::PRACTICE_URL {
+        util::print_error("login failire");
+        process::exit(1);
+    }
     util::save_state(&token, cookies);
     println!("OK");
 }
