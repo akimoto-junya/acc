@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::config::Overridable;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Test {
@@ -21,4 +21,3 @@ impl Overridable for Test {
         }
     }
 }
-
