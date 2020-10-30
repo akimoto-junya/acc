@@ -20,10 +20,10 @@ pub fn run(_matches: &ArgMatches) {
     let mut password = String::new();
     let mut password2 = String::new();
     loop {
-        print!("password:");
+        println!("password:");
         std::io::stdout().flush().unwrap();
         password = read_password().unwrap();
-        print!("password again:");
+        println!("password again:");
         std::io::stdout().flush().unwrap();
         password2 = read_password().unwrap();
         if password == password2 {

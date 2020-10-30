@@ -6,7 +6,7 @@ use std::{env, fs, process};
 
 const DEFAULT_CONFIG: &str = r#"total_task = 6
 extension = "cpp"
-language_id = 3003
+language_id = 4003
 
 [test]
 compiler = "g++"

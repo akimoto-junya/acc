@@ -68,6 +68,6 @@ pub fn run(matches: &ArgMatches) {
             util::print_error("failed to submit source code");
         }
     } else {
-        util::print_error("failed to submit source code");
+        util::print_error("failed to get submit page");
     }
 }
