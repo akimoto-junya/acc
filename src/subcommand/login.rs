@@ -23,9 +23,11 @@ pub fn run(_matches: &ArgMatches) {
         print!("password:");
         std::io::stdout().flush().unwrap();
         password = read_password().unwrap();
+        print!("\n");
         print!("password again:");
         std::io::stdout().flush().unwrap();
         password2 = read_password().unwrap();
+        print!("\n");
         if password == password2 {
             break;
         }
