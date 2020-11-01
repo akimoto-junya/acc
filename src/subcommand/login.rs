@@ -1,8 +1,8 @@
 use crate::acc_client::{self, AccClient};
 use crate::util;
 use clap::{App, ArgMatches, SubCommand};
-use rpassword::read_password;
-use std::io::Write;
+use termion::input::TermRead;
+use std::io::{Write, stdin, stdout};
 use std::process;
 
 pub const NAME: &str = "login";
@@ -13,26 +13,35 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
 
 pub fn run(_matches: &ArgMatches) {
     /* ユーザネームとパスワードを入力 */
-    print!("username:");
-    std::io::stdout().flush().unwrap();
-    let mut username = String::new();
-    std::io::stdin().read_line(&mut username).unwrap();
-    let mut password = String::new();
-    let mut password2 = String::new();
-    loop {
-        print!("password:");
-        std::io::stdout().flush().unwrap();
-        password = read_password().unwrap();
-        print!("\n");
-        print!("password again:");
-        std::io::stdout().flush().unwrap();
-        password2 = read_password().unwrap();
-        print!("\n");
-        if password == password2 {
-            break;
+    let stdin = stdin();
+    let stdout = stdout();
+    let mut stdout = stdout.lock();
+    let mut stdin = stdin.lock();
+    stdout.write_all(b"username:").unwrap();
+    stdout.flush().unwrap();
+    let username = stdin.read_line()
+        .unwrap_or(Some(String::new()))
+        .unwrap_or(String::new());
+    let password = (|| -> String {
+        loop {
+            stdout.write_all(b"password:").unwrap();
+            stdout.flush().unwrap();
+            let password = stdin.read_passwd(&mut stdout)
+                .unwrap_or(Some(String::new()))
+                .unwrap_or(String::new());
+            stdout.write_all(b"\npassword again:").unwrap();
+            stdout.flush().unwrap();
+            let password2 = stdin.read_passwd(&mut stdout)
+                .unwrap_or(Some(String::new()))
+                .unwrap_or(String::new());
+            stdout.write_all(b"\n").unwrap();
+            if &password != &password2 {
+                stdout.write_all(b"password is wrong!!\n").unwrap();
+                continue;
+            }
+            return password;
         }
-        println!("password is wrong!!\n");
-    }
+    })();
     /* ログインしてクッキーとcsrfトークンを保存する */
     let client = AccClient::new(false);
     let (url, token, cookies) = client

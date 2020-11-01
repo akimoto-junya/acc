@@ -4,7 +4,7 @@ use easy_scraper::Pattern;
 use reqwest::{header, Client, Response};
 use std::process;
 
-pub const USER_AGENT: &str = "acc/1.1.1";
+pub const USER_AGENT: &str = "acc/1.1.3";
 pub const LOGIN_URL: &str = "https://atcoder.jp/login?continue=https%3A%2F%2Fatcoder.jp%2Fcontests%2Fpractice%2Fsubmissions%2Fme";
 pub const PRACTICE_URL: &str = "https://atcoder.jp/contests/practice/submissions/me";
 pub const TASK_URL: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST_TASK>_<TASK>";
