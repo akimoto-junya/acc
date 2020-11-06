@@ -13,20 +13,12 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
         .about("Create a new atcoder project")
         .arg(Arg::with_name("DIR_NAME").required(true).index(1))
         .arg(
-            Arg::with_name("extension")
-                .short("e")
-                .long("extension")
-                .help("Sets a init file extension")
-                .takes_value(true)
-                .value_name("EXT"),
-        )
-        .arg(
-            Arg::with_name("language_id")
+            Arg::with_name("language_name")
                 .short("l")
-                .long("lang")
-                .help("Sets a language id")
+                .long("language")
+                .help("Selects a programming language")
                 .takes_value(true)
-                .value_name("LANGUAGE_ID"),
+                .value_name("LANGUAGE_NAME"),
         )
         .arg(
             Arg::with_name("total_task")
@@ -40,8 +32,7 @@ pub fn get_command<'a, 'b>() -> App<'a, 'b> {
 
 pub fn run(matches: &ArgMatches) {
     let dir_name = matches.value_of("DIR_NAME").unwrap();
-    let extension = matches.value_of("extension");
-    let language_id = matches.value_of("language_id");
+    let language_name = matches.value_of("language_name");
     let total_task = matches.value_of("total_task");
     let path = env::current_dir().unwrap();
     let path = path.to_str().unwrap();
@@ -56,19 +47,12 @@ pub fn run(matches: &ArgMatches) {
 
     // コンテスト名, 拡張子, 言語IDを追記してローカルに保存
     let local_config_path = [path, dir_name, "config.toml"].join("/");
-    let mut overriding_config = config.clone();
-    overriding_config.contest = Some(dir_name.to_string());
-    if let Some(extension) = extension {
-        overriding_config.extension = Some(extension.to_string());
+    let mut config = config.clone();
+    config.contest = dir_name.to_string();
+    if let Some(language_name) = language_name {
+        config.selected_language = Some(language_name.to_string());
     }
-    if let Some(language_id) = language_id {
-        let language_id: u16 = language_id.parse().unwrap_or_else(|_| {
-            util::print_error("language_id is wrong");
-            process::exit(1);
-        });
-        overriding_config.language_id = Some(language_id);
-    }
-    let content = toml::to_string(&overriding_config).unwrap();
+    let content = toml::to_string(&config).unwrap();
     let mut local_config_file = File::create(local_config_path).unwrap();
     local_config_file
         .write_all(content.as_bytes())
@@ -77,20 +61,18 @@ pub fn run(matches: &ArgMatches) {
             process::exit(1);
         });
 
-    // 拡張子が設定されているならその分のファイルを作成
-    let extension = if extension.is_some() {
-        match extension {
-            Some(ext) => Some(ext.to_string()),
-            None => None,
+    // 言語が設定されているならその分のファイルを作成
+    let language_name = config.selected_language.clone();
+    if let Some(language_name) = language_name {
+        if !config.languages.contains_key(&language_name) {
+            util::print_error(format!("\"{}\" is not found in languages", language_name));
+            process::exit(1);
         }
-    } else {
-        config.extension
-    };
-    if let Some(extension) = extension {
+        let extension = config.languages[&language_name].extension.clone();
         let total_file = if total_task.is_some() {
             total_task.unwrap().parse().unwrap_or_default()
         } else {
-            config.total_task.unwrap()
+            6 // 指定されていないならA〜F作成
         };
         if total_file <= 0 {
             println!("{}: TOTAL_TASK can not set", colortext::WARNING);

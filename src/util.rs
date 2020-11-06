@@ -1,23 +1,49 @@
 use crate::colortext;
 use crate::config::state::{Cookie, State};
-use crate::config::{Config, Overridable};
+use crate::config::{Config, Language};
 use std::io::prelude::*;
+use std::collections::HashMap;
 use std::{env, fs, process};
+use termion::event::Key;
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::{cursor, style, clear};
+use termion::cursor::DetectCursorPos;
+use std::io::{Write, stdout, stdin, Stdout};
 
-const DEFAULT_CONFIG: &str = r#"total_task = 6
+const DEFAULT_CONFIG: &str = r#"contest = "config"
+selected_language = "cpp_gcc"
+
+[languages.cpp_gcc]
 extension = "cpp"
-language_id = 4003
+language_id = "4003"
 
-[test]
+[languages.cpp_gcc.test]
 compiler = "g++"
-compile_arg = "<TASK>.cpp -o <TASK>"
+compile_arg = "-std=gnu++17 -o <TASK> <TASK>.cpp"
 command = "./<TASK>"
+tle_time = 3000
+print_wrong_answer = true
+
+[languages.python]
+extension = "py"
+language_id = "4006"
+
+[languages.python.test]
+command = "python3"
+command_arg = "<TASK>.py"
+tle_time = 3000
 print_wrong_answer = true
 "#;
 
 pub fn print_error<S: Into<String>>(error_message: S) {
     let error_message = error_message.into();
     println!("{}: {}", colortext::ERROR, error_message);
+}
+
+pub fn print_warning<S: Into<String>>(warning_message: S) {
+    let warning_message = warning_message.into();
+    println!("{}: {}", colortext::WARNING, warning_message);
 }
 
 pub fn make_dir(dir_name: &str) -> bool {
@@ -27,12 +53,83 @@ pub fn make_dir(dir_name: &str) -> bool {
     }
 }
 
+pub fn has_extension<S: Into<String>>(task: S) -> bool {
+    let task = task.into();
+    task.contains(".")
+}
+
 pub fn remove_last_indent<S: Into<String>>(content: S) -> String {
     let mut result = content.into();
     if result.ends_with("\n") {
         result.pop();
     }
     result
+}
+
+pub fn select_language(languages: HashMap<String, Language>, extension: &str) -> Option<Language> {
+    let languages = languages.into_iter()
+        .filter(|(_n, l)| &l.extension == extension)
+        .collect::<Vec<(String, Language)>>();
+    if languages.is_empty() {
+        return None;
+    } else if languages.len() == 1 {
+        return Some(languages[0].1.clone());
+    }
+
+    let stdin = stdin();
+    let mut stdout = stdout().into_raw_mode().unwrap();
+    write!(stdout,"{}", cursor::Hide).unwrap();
+    stdout.flush().unwrap();
+
+    /* 表示するコンテンツ分のスペースを改行で確保 */
+    let count = languages.len() as u16;
+    let preface = 1;
+    for _ in 0..(count + preface) {
+        print!("\n");
+    }
+    stdout.flush().unwrap();
+
+    /* 表示開始位置に戻り，その位置を保存しておく */
+    write!(stdout, "{}", cursor::Up(count + preface)).unwrap();
+    write!(stdout, "{}", cursor::Save).unwrap();
+
+    let mut down: u16 = 0;
+    let (_, min_top) = stdout.cursor_pos().unwrap();
+
+    /* 表示用のクロージャ作成 */
+    let print_content = |stdout: &mut Stdout, down: &mut u16| {
+        write!(stdout, "{}", cursor::Goto(1, min_top)).unwrap();
+        write!(stdout, "{}", clear::AfterCursor).unwrap();
+        print!("*** Select programming language ***");
+        for (i, x) in (0..count).zip(languages.iter()) {
+            let name = if i == *down {
+                format!("- {}{}{}", style::Underline, x.0 , style::Reset)
+            } else {
+                String::from("- ") + &x.0
+            };
+            write!(stdout, "{}", termion::cursor::Goto(1, min_top + i + preface)).unwrap();
+            print!("{}", name);
+        }
+        stdout.flush().unwrap();
+    };
+
+    print_content(&mut stdout, &mut down);
+    for c in stdin.keys() {
+        match c.unwrap() {
+            Key::Char('q') => break,
+            Key::Char('j') | Key::Down  => down  = (down + 1) % count,
+            Key::Char('k') | Key::Up    => down  = (count + down - 1) % count,
+            Key::Char('\n') => {
+                break;
+            },
+            _ => {}
+        }
+        print_content(&mut stdout, &mut down);
+    }
+    /* 後処理をして終了 */
+    write!(stdout, "{}{}{}", cursor::Restore, cursor::Show, clear::AfterCursor).unwrap();
+    stdout.flush().unwrap();
+    Some(languages[down as usize].1.clone())
 }
 
 pub fn read_file(path: &str) -> String {
@@ -55,23 +152,20 @@ pub fn load_config(is_local: bool) -> Config {
     };
     let mut config_path = config_dir.clone();
     config_path.push("config.toml");
+    let config_path_exists = config_path.as_path().exists();
     let config_path = config_path.to_str().unwrap();
-    if !(is_local || config_dir.as_path().exists()) {
-        let result = make_dir(config_dir.to_str().unwrap());
-        if !result {
-            print_error("Can not create config directory");
-            process::exit(1);
-        }
+    if !(is_local || config_path_exists) {
+        let _ = make_dir(config_dir.to_str().unwrap());
         let mut file = fs::File::create(config_path).unwrap();
         file.write_all(DEFAULT_CONFIG.as_bytes()).unwrap();
+        println!("{}: {} is created", colortext::INFO, config_path);
     }
 
     let content = read_file(config_path);
-    let mut config: Config = toml::from_str(&content).unwrap_or_else(|_| {
+    let config: Config = toml::from_str(&content).unwrap_or_else(|_| {
         print_error("config content is wrong");
         process::exit(1);
     });
-    config.test.override_by_default();
     config
 }
 

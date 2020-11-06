@@ -19,17 +19,23 @@ pub fn run(matches: &ArgMatches) {
     let task_name = matches.value_of("TASK_NAME").unwrap();
     let config = util::load_config(true);
     let contest_task_name = config.contest_task_name;
-    let contest_name = config.contest.unwrap_or_else(|| {
-        util::print_error("contest_name in local config.toml is not defined");
-        process::exit(1);
-    });
-    let extension = config.extension;
-    if extension.is_none() {
-        util::print_error("extension in local config.toml is not defined");
-        process::exit(1);
-    }
-    let extension = extension.unwrap();
-    let config = config.test;
+    let contest_name = config.contest;
+    let language = if util::has_extension(task_name) {
+        let extension = task_name.clone().split_terminator(".").last().unwrap();
+        util::select_language(config.languages, &extension).unwrap()
+    } else {
+        let language_name = config.selected_language.unwrap_or_else(|| {
+            util::print_error("selected_language setting or file extension is needed");
+            process::exit(1);
+        });
+        config.languages.get(&language_name).unwrap_or_else(|| {
+            util::print_error(format!("\"{}\" is not found in languages", language_name));
+            process::exit(1);
+        }).clone()
+    };
+    let config = language.test;
+    let extension = language.extension;
+
     let (inputs, outputs) = test::get_testcases(&contest_name, contest_task_name, &task_name);
 
     let mut path = env::current_dir().unwrap();
