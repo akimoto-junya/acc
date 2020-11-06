@@ -35,7 +35,12 @@ pub fn run(matches: &ArgMatches) {
     };
     let config = language.test;
     let extension = language.extension;
-
+    let task_name = if util::has_extension(task_name) {
+        let extension = String::from(".") + &extension;
+        task_name.strip_suffix(&extension).unwrap()
+    } else {
+        task_name
+    };
     let (inputs, outputs) = test::get_testcases(&contest_name, contest_task_name, &task_name);
 
     let mut path = env::current_dir().unwrap();

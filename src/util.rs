@@ -1,7 +1,6 @@
 use crate::colortext;
 use crate::config::state::{Cookie, State};
 use crate::config::{Config, Language};
-use std::io::prelude::*;
 use std::collections::HashMap;
 use std::{env, fs, process};
 use termion::event::Key;

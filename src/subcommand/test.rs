@@ -99,7 +99,10 @@ fn compile(config: &Test, task_name: &str) -> bool {
     let output = Command::new(compiler)
         .args(args)
         .output()
-        .expect("failed to execute process");
+        .unwrap_or_else(|_| {
+            util::print_error("fail to execute compile command");
+            process::exit(1);
+        });
     let status = output.status;
     if !status.success() {
         let output = String::from_utf8_lossy(&output.stderr);
@@ -295,6 +298,12 @@ pub fn run(matches: &ArgMatches) {
         }).clone()
     };
     let config = language.test;
+    let task_name = if util::has_extension(task_name) {
+        let extension = String::from(".") + &language.extension;
+        task_name.strip_suffix(&extension).unwrap()
+    } else {
+        task_name
+    };
     let (inputs, outputs) = get_testcases(&contest_name, contest_task_name, &task_name);
     test(&task_name, &inputs, &outputs, &config);
 }

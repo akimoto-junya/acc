@@ -40,7 +40,12 @@ pub fn run(matches: &ArgMatches) {
         }).clone()
     };
     let extension = language.extension;
-    let file_name = [task_name, &extension].join(".");
+    let (file_name, task_name) = if util::has_extension(task_name) {
+        let extension = String::from(".") + &extension;
+        (task_name.to_string(), task_name.strip_suffix(&extension).unwrap())
+    } else {
+        ([task_name, &extension].join("."), task_name)
+    };
     let language_id = language.language_id;
 
     let client = AccClient::new(true);
