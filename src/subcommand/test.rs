@@ -99,7 +99,10 @@ fn compile(config: &Test, task_name: &str) -> bool {
     let output = Command::new(compiler)
         .args(args)
         .output()
-        .expect("failed to execute process");
+        .unwrap_or_else(|_| {
+            util::print_error("fail to execute compile command");
+            process::exit(1);
+        });
     let status = output.status;
     if !status.success() {
         let output = String::from_utf8_lossy(&output.stderr);
@@ -233,7 +236,7 @@ pub fn get_testcases(
 pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config: &Test) {
     let mut all_result = Status::AC;
     let mut count = 0;
-    let needs_print = config.print_wrong_answer.unwrap();
+    let needs_print = config.print_wrong_answer;
     if config.compiler.is_some() {
         let is_completed = compile(&config, task_name);
         if !is_completed {
@@ -245,7 +248,7 @@ pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config
         count += 1;
         print!("- testcase {} ... ", count);
 
-        let tle_time = config.tle_time.unwrap_or(3000);
+        let tle_time = config.tle_time;
         let (caused_runtime_error, result) = execute(config, task_name, input, tle_time);
         if caused_runtime_error {
             all_result = all_result.max(Status::RE);
@@ -280,11 +283,27 @@ pub fn run(matches: &ArgMatches) {
     let task_name = matches.value_of("TASK_NAME").unwrap();
     let config = util::load_config(true);
     let contest_task_name = config.contest_task_name;
-    let contest_name = config.contest.unwrap_or_else(|| {
-        util::print_error("contest_name in local config.toml is not defined");
-        process::exit(1);
-    });
-    let config = config.test;
+    let contest_name = config.contest;
+    let language = if util::has_extension(task_name) {
+        let extension = task_name.clone().split_terminator(".").last().unwrap();
+        util::select_language(config.languages, &extension).unwrap()
+    } else {
+        let language_name = config.selected_language.unwrap_or_else(|| {
+            util::print_error("selected_language setting or file extension is needed");
+            process::exit(1);
+        });
+        config.languages.get(&language_name).unwrap_or_else(|| {
+            util::print_error(format!("\"{}\" is not found in languages", language_name));
+            process::exit(1);
+        }).clone()
+    };
+    let config = language.test;
+    let task_name = if util::has_extension(task_name) {
+        let extension = String::from(".") + &language.extension;
+        task_name.strip_suffix(&extension).unwrap()
+    } else {
+        task_name
+    };
     let (inputs, outputs) = get_testcases(&contest_name, contest_task_name, &task_name);
     test(&task_name, &inputs, &outputs, &config);
 }

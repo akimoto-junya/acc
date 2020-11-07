@@ -1,20 +1,17 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub use test::Test;
+pub use language::Language;
 
 pub mod state;
 pub mod test;
+pub mod language;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Config {
-    pub contest: Option<String>,
+    pub contest: String,
     pub contest_task_name: Option<String>,
-    pub total_task: Option<u8>,
-    pub extension: Option<String>,
-    pub language_id: Option<u16>,
-    pub test: Test,
-}
-
-pub trait Overridable {
-    fn override_by_default(&mut self);
+    pub selected_language: Option<String>,
+    pub languages: HashMap<String, Language>,
 }
