@@ -1,5 +1,5 @@
 # acc
-AtCoderのテストや提出するやつ
+AtCoderのテストや提出をおこなうコマンド
 
 ## ディレクトリ構成
 ```
@@ -38,7 +38,7 @@ $ acc login
 $ acc init [OPTION] <DIR_NAME>
 
 ex )
-$ acc init -e py -l 4006 abc160
+$ acc init abc160 -l python
 ```
 
 基本的にディレクトリ名をコンテスト名として使用するため，ディレクトリと異なるコンテストディレクトリを作成したい場合は，コマンド実行後にコンテストディレクトリ内のconfig.tomlを編集する必要がある．
@@ -47,11 +47,73 @@ $ acc init -e py -l 4006 abc160
 
 | &nbsp;&nbsp;&nbsp;OPTION&nbsp;&nbsp;&nbsp; |                                                            説明                                                            |
 | :----------------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| -e <br>--extension                         | 最初に作成されるファイルの拡張子を指定する, \<config\_dir\>/acc/template.\<extension\>があればテンプレートとして使用される |
-| -l <br> --lang                             | AtCoderで提出するときの言語を指定する(詳細は後述)                                                                          |
+| -l <br> --lang                             | AtCoderで提出するときの言語を指定する(自分で設定したものを指定する必要)                                                                          |
 | -t <br> --total                             | 最初に作成するファイルの数を指定する                                                                         |
 
--l --lang で指定する値の詳細
+---
+
+### テスト
+ソースコードのテストを行う.
+
+```bash
+$ acc test <TASK>
+
+ex )
+$ acc test A
+```
+
+- コンテストディレクトリ内で実行を行う必要がある．
+- 初回実行時AtCoderからテストを取得し，プロジェクト内にtestcase/\<TASK\>.tomlとして保存する．
+- テストケースを追加したい場合は，testcaseディレクトリ内のファイルを編集することで対応できる
+
+---
+
+### ファイル監視＆テスト
+指定されたタスクのファイル監視をし，変更されたらテストを行う.
+
+```bash
+$ acc watch <TASK>
+
+ex )
+$ acc watch A
+```
+
+- テスト関連の仕様はtestと同じ
+
+---
+
+### 提出
+ソースコードの提出を行う．
+
+```bash
+$ acc submit <TASK>
+
+ex )
+$ acc submit A
+```
+---
+
+## 設定
+### 詳細
+<language\_name>はTOMLの使用に従う範囲で任意に設定可能
+
+|           項目            |             型              |                              説明                                                       | 備考 |
+| :------------------------ | :-------------------------- | --------------------------------------------------------------------------------------- |:----:|
+| contest                   | String                      | コンテスト名(コンテストプロジェクト内の設定)                                            | 必須 |
+| contest\_task\_name       | String                      | URLのタスク部分のコンテスト名(contestと異なるとき指定)                                  |      |
+| selected\_language        | String                      | 使用する言語を指定                                                                      |      |
+| languages.<language\_name>.extension                 | String                      | ファイルの拡張子を指定                                       | 必須 |
+| languages.<language\_name>.language\_id              | Integer(符号なし１６ビット) | AtCoderの言語指定                                            | 必須 |
+| languages.<language\_name>.test.compiler             | String                      | テスト時に使用するコンパイラを指定                           |      |
+| languages.<language\_name>.test.compile\_arg         | String                      | コンパイル時のarg指定                                        |      |
+| languages.<language\_name>.test.command              | String                      | 実行するコマンドを指定                                       | 必須 |
+| languages.<language\_name>.test.command\_arg         | String                      | コマンドを実行するときのarg指定                              |      |
+| languages.<language\_name>.test.tle\_time            | Integer(符号なし１６ビット) | TLEの時間指定[ms]                                            | 必須 |
+| languages.<language\_name>.test.print\_wrong\_answer | Boolean                     | WAのときの出力                                               | 必須 |
+
+---
+
+### 言語ID一覧
 
 | 使用する言語 | 指定する値 |
 | :---: | :---: |
@@ -123,96 +185,36 @@ $ acc init -e py -l 4006 abc160
 | Sed (4.4) | 4066 |
 | Vim (8.2.0460) | 4067 |
 
----
-
-### テスト
-ソースコードのテストを行う.
-
-```bash
-$ acc test <TASK>
-
-ex )
-$ acc test A
-```
-
-- コンテストディレクトリ内で実行を行う必要がある．
-- 初回実行時AtCoderからテストを取得し，プロジェクト内にtestcase/\<TASK\>.tomlとして保存する．
-- テストケースを追加したい場合は，testcaseディレクトリ内のファイルを編集することで対応できる
-
----
-
-### ファイル監視＆テスト
-指定されたタスクのファイル監視をし，変更されたらテストを行う.
-
-```bash
-$ acc watch <TASK>
-
-ex )
-$ acc watch A
-```
-
-- テスト関連の仕様はtestと同じ
-
----
-
-### 提出
-ソースコードの提出を行う．
-
-```bash
-$ acc submit <TASK>
-
-ex )
-$ acc submit A
-```
----
-
-## 設定
-### 詳細
-
-|           項目            |             型              |                              説明                              |
-| :------------------------ | :-------------------------- | -------------------------------------------------------------- |
-| contest                   | String                      | コンテスト名(コンテストプロジェクト内の設定)                   |
-| contest\_task\_name         | String                      | URLのタスク部分のコンテスト名(contestと異なるとき指定)        |
-| total\_task               | Integer(符号なし8ビット)    | acc init時に作成されるファイル数を指定(拡張子設定が無いと無効) |
-| extension                 | String                      | ファイルの拡張子を指定                                         |
-| language\_id              | Integer(符号なし１６ビット) | AtCoderの言語指定                                              |
-| test.compiler             | String                      | テスト時に使用するコンパイラを指定                             |
-| test.compile\_arg         | String                      | コンパイル時のarg指定                                          |
-| test.command              | String                      | 実行するコマンドを指定                                         |
-| test.command\_arg         | String                      | コマンドを実行するときのarg指定                                |
-| test.tle\_time            | Integer(符号なし１６ビット) | TLEの時間指定[ms]                                              |
-| test.print\_wrong\_answer | Boolean                     | WAのときの出力                                                 |
-
----
 
 ### 設定例
-\<config\_dir\>/acc/config.tomlの例
+\<config\_dir\>/acc/config.tomlの設定例
 \<TASK\>はacc testで指定したものを代入するためのもの
 #### C++
 
 ```toml
-total_task = 6
-extension = "cpp"
-language_id = 4003
+contest = "config"
+selected_language = "cpp_gcc"
 
-[test]
+[languages.cpp_gcc]
+extension = "cpp"
+language_id = "4003"
+
+[languages.cpp_gcc.test]
 compiler = "g++"
-compile_arg = "<TASK>.cpp -o <TASK>"
+compile_arg = "-std=gnu++17 -o <TASK> <TASK>.cpp"
 command = "./<TASK>"
 tle_time = 3000
 print_wrong_answer = true
-```
 
-#### Python3
-
-```toml
-total_task = 6
+[languages.python]
 extension = "py"
-language_id = 4006
+language_id = "4006"
 
-[test]
+[languages.python.test]
 command = "python3"
 command_arg = "<TASK>.py"
 tle_time = 3000
 print_wrong_answer = true
+
 ```
+
