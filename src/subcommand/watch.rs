@@ -49,11 +49,11 @@ pub fn run(matches: &ArgMatches) {
     let contest_info: Vec<&str> = matches.values_of("CONTEST_INFO").unwrap().collect();
     let config = util::load_config(true);
 
-    let (contest_name, contest_task_name, task_name) = match contest_info.len() {
+    let (contest_name, contest_task_name, file_name) = match contest_info.len() {
         1 => {
-            let task_name = contest_info[0];
-            let contest_task_name = config.contest_task_name.unwrap_or(config.contest.clone()) + "_" + &util::remove_extension(task_name).to_lowercase();
-            (config.contest, contest_task_name, task_name)
+            let file_name = contest_info[0];
+            let contest_task_name = config.contest_task_name.unwrap_or(config.contest.clone()) + "_" + &util::remove_extension(file_name).to_lowercase();
+            (config.contest, contest_task_name, file_name)
         },
         2 => {
             let contest_task_name = util::remove_extension(contest_info[1]);
@@ -65,9 +65,12 @@ pub fn run(matches: &ArgMatches) {
         },
     };
 
-    let language = if util::has_extension(task_name) {
-        let extension = task_name.clone().split_terminator(".").last().unwrap();
-        util::select_language(config.languages, &extension).unwrap()
+    let language = if util::has_extension(file_name) {
+        let extension = file_name.clone().split_terminator(".").last().unwrap();
+        util::select_language(config.languages, &extension).unwrap_or_else(||{
+            util::print_error(format!("language setting for \".{}\" is not found", extension));
+            process::exit(1);
+        })
     } else {
         let language_name = config.selected_language.unwrap_or_else(|| {
             util::print_error("selected_language setting or file extension is needed");
@@ -80,21 +83,24 @@ pub fn run(matches: &ArgMatches) {
     };
     let config = language.test;
     let extension = language.extension;
-    let task_name = if util::has_extension(task_name) {
-        util::remove_extension(task_name)
+    let file_name = if util::has_extension(file_name) {
+        util::remove_extension(file_name)
     } else {
-        task_name.to_string()
+        file_name.to_string()
     };
-    let (inputs, outputs) = test::get_testcases(&contest_name, contest_task_name);
 
     let mut path = env::current_dir().unwrap();
-    let file_name = [task_name.clone(), extension].join(".");
-    path.push(file_name);
+    path.push([file_name.clone(), extension].join("."));
+    if !path.exists() {
+        util::print_error(format!("{} is not found", path.to_str().unwrap()));
+        process::exit(1);
+    }
+    let (inputs, outputs) = test::get_testcases(&contest_name, contest_task_name);
     let path = path.to_str().unwrap();
     let (tx, rx) = channel();
     let mut watcher = watcher(tx, Duration::from_millis(100)).unwrap();
     watcher.watch(path, RecursiveMode::NonRecursive).unwrap();
-    println!("watching task {} ...", task_name);
+    println!("watching task {} ...", file_name);
     let mut count = 1;
     let mut stdin = async_stdin().bytes();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -105,7 +111,7 @@ pub fn run(matches: &ArgMatches) {
                 if let DebouncedEvent::Write(_) = event {
                     stdout.suspend_raw_mode().unwrap();
                     println!("[{}]: {}", count, Local::now().format("%Y/%m/%d %H:%M:%S"));
-                    test::test(&task_name, &inputs, &outputs, &config);
+                    test::test(&file_name, &inputs, &outputs, &config);
                     println!("\n");
                     stdout.activate_raw_mode().unwrap();
                     count += 1;

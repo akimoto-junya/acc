@@ -1,5 +1,6 @@
 use crate::acc_client::{self, AccClient};
 use crate::util;
+use crate::colortext;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::{env, process};
 
@@ -48,11 +49,11 @@ pub fn run(matches: &ArgMatches) {
     let contest_info: Vec<&str> = matches.values_of("CONTEST_INFO").unwrap().collect();
     let config = util::load_config(true);
 
-    let (contest_name, contest_task_name, task_name) = match contest_info.len() {
+    let (contest_name, contest_task_name, file_name) = match contest_info.len() {
         1 => {
-            let task_name = contest_info[0];
-            let contest_task_name = config.contest_task_name.unwrap_or(config.contest.clone()) + "_" + &util::remove_extension(task_name).to_lowercase();
-            (config.contest, contest_task_name, task_name)
+            let file_name = contest_info[0];
+            let contest_task_name = config.contest_task_name.unwrap_or(config.contest.clone()) + "_" + &util::remove_extension(file_name).to_lowercase();
+            (config.contest, contest_task_name, file_name)
         },
         2 => {
             let contest_task_name = util::remove_extension(contest_info[1]);
@@ -64,9 +65,12 @@ pub fn run(matches: &ArgMatches) {
         },
     };
 
-    let language = if util::has_extension(task_name) {
-        let extension = task_name.clone().split_terminator(".").last().unwrap();
-        util::select_language(config.languages, &extension).unwrap()
+    let language = if util::has_extension(file_name) {
+        let extension = file_name.clone().split_terminator(".").last().unwrap();
+        util::select_language(config.languages, &extension).unwrap_or_else(|| {
+            util::print_error(format!("language setting for \".{}\" is not found", extension));
+            process::exit(1);
+        })
     } else {
         let language_name = config.selected_language.unwrap_or_else(|| {
             util::print_error("selected_language setting or file extension is needed");
@@ -79,11 +83,19 @@ pub fn run(matches: &ArgMatches) {
     };
 
     let extension = language.extension;
-    let file_name = if util::has_extension(task_name) {
-        task_name.to_string()
+    let file_name = if util::has_extension(file_name) {
+        file_name.to_string()
     } else {
-        [task_name, &extension].join(".")
+        [file_name, &extension].join(".")
     };
+
+    let mut path = env::current_dir().unwrap();
+    path.push(file_name.clone());
+    if !path.exists() {
+        util::print_error(format!("{} is not found", path.to_str().unwrap()));
+        process::exit(1);
+    }
+
     let language_id = language.language_id;
 
     let client = AccClient::new(true);
@@ -97,7 +109,7 @@ pub fn run(matches: &ArgMatches) {
         util::print_error("Require to run \"acc login\"");
         process::exit(1);
     });
-    println!("{}", &contest_task_name);
+    println!("{}: submit to \"{}\"", colortext::info(), &url);
     let form_data = vec![
         ("csrf_token", token.clone()),
         ("sourceCode", source),
