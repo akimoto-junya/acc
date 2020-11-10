@@ -37,12 +37,12 @@ print_wrong_answer = true
 
 pub fn print_error<S: Into<String>>(error_message: S) {
     let error_message = error_message.into();
-    println!("{}: {}", colortext::ERROR, error_message);
+    println!("{}: {}", colortext::error(), error_message);
 }
 
 pub fn print_warning<S: Into<String>>(warning_message: S) {
     let warning_message = warning_message.into();
-    println!("{}: {}", colortext::WARNING, warning_message);
+    println!("{}: {}", colortext::warning(), warning_message);
 }
 
 pub fn make_dir(dir_name: &str) -> bool {
@@ -165,7 +165,7 @@ pub fn load_config(is_local: bool) -> Config {
         let _ = make_dir(config_dir.to_str().unwrap());
         let mut file = fs::File::create(config_path).unwrap();
         file.write_all(DEFAULT_CONFIG.as_bytes()).unwrap();
-        println!("{}: {} is created", colortext::INFO, config_path);
+        println!("{}: {} is created", colortext::info(), config_path);
     }
 
     let content = read_file(config_path);

@@ -61,10 +61,10 @@ impl PartialEq for Status {
 impl Status {
     fn to_string(&self) -> String {
         match self {
-            Status::AC => colortext::AC.to_string(),
-            Status::TLE => colortext::TLE.to_string(),
-            Status::RE => colortext::RE.to_string(),
-            Status::WA => colortext::WA.to_string(),
+            Status::AC => colortext::ac(),
+            Status::TLE => colortext::tle(),
+            Status::RE => colortext::re(),
+            Status::WA => colortext::wa(),
         }
     }
 }
@@ -116,7 +116,7 @@ fn compile(config: &Test, task_name: &str) -> bool {
         util::print_error("compile_arg in config.toml is not defined");
         return false;
     }
-    println!("{}: starting compile", colortext::INFO);
+    println!("{}: starting compile", colortext::info());
     let arg = config.compile_arg.as_ref().unwrap();
     let arg = arg.replace("<TASK>", task_name);
     let args = arg.split(" ");
@@ -131,10 +131,10 @@ fn compile(config: &Test, task_name: &str) -> bool {
     if !status.success() {
         let output = String::from_utf8_lossy(&output.stderr);
         util::print_error("failed to compile");
-        println!("{}\n\nresult: {}", output, colortext::CE);
+        println!("{}\n\nresult: {}", output, colortext::ce());
         return false;
     }
-    println!("{}: compiled successfully\n", colortext::INFO);
+    println!("{}: compiled successfully\n", colortext::info());
     return true;
 }
 
@@ -219,7 +219,7 @@ pub fn get_testcases(
     let url = acc_client::TASK_URL.to_string();
     let url = url.replace("<CONTEST>", &contest_name);
     let url = url.replace("<CONTEST_TASK>", &contest_task_name);
-    println!("{}: get testcase in \"{}\"", colortext::INFO, &url);
+    println!("{}: get testcase in \"{}\"", colortext::info(), &url);
     let result = client.get_page(&url).unwrap_or_else(|| {
         util::print_error("The correct test case could not be get");
         process::exit(1);
@@ -266,7 +266,7 @@ pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config
             return;
         }
     }
-    println!("{}: starting test ...", colortext::INFO);
+    println!("{}: starting test ...", colortext::info());
     for (input, output) in inputs.iter().zip(outputs.iter()) {
         count += 1;
         print!("- testcase {} ... ", count);
@@ -275,21 +275,21 @@ pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config
         let (caused_runtime_error, result) = execute(config, task_name, input, tle_time);
         if caused_runtime_error {
             all_result = all_result.max(Status::RE);
-            println!("{}", colortext::RE);
+            println!("{}", colortext::re());
             continue;
         }
         if result.is_none() { all_result = all_result.max(Status::TLE);
-            println!("{}", colortext::TLE);
+            println!("{}", colortext::tle());
             continue;
         }
         let result = util::remove_last_indent(result.unwrap());
         let output = util::remove_last_indent(output);
         let is_correct = result == output;
         let status = if is_correct {
-            colortext::AC
+            colortext::ac()
         } else {
             all_result = all_result.max(Status::WA);
-            colortext::WA
+            colortext::wa()
         };
         println!("{}", status);
         if !is_correct && needs_print {

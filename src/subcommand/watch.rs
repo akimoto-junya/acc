@@ -119,7 +119,7 @@ pub fn run(matches: &ArgMatches) {
                         match k {
                             Event::Key(Key::Char('q')) | Event::Key(Key::Ctrl('c')) => {
                                 stdout.suspend_raw_mode().unwrap();
-                                println!("{}: finished", colortext::INFO);
+                                println!("{}: finished", colortext::info());
                                 break;
                             },
                             _ => {}

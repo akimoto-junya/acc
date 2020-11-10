@@ -10,8 +10,6 @@ pub const PRACTICE_URL: &str = "https://atcoder.jp/contests/practice/submissions
 pub const TASK_URL: &str = "https://atcoder.jp/contests/<CONTEST>/tasks/<CONTEST_TASK>";
 pub const SUBMIT_URL: &str = "https://atcoder.jp/contests/<CONTEST>/submit";
 pub const SUBMISSIONS_URL: &str = "https://atcoder.jp/contests/<CONTEST>/submissions/me";
-//pub const TESTCASE_PATTERN: &str =
-//    r#"<span class="lang-ja"><div class="part"><section>{{io:*}}</section></div></span>"#;
 pub const TESTCASE_PATTERN: &str =
     r#"<span class="lang-ja"><div class="part"><section>{{io:*}}</section></div></span>"#;
 pub const CSRF_TOKEN_PATTERN: &str = r#"<input type="hidden" name="csrf_token" value={{token}} />"#;
