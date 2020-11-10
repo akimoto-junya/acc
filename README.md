@@ -37,7 +37,7 @@ $ acc login
 ```bash
 $ acc init [OPTION] <DIR_NAME>
 
-ex )
+ex.)
 $ acc init abc160 -l python
 ```
 
@@ -58,7 +58,7 @@ $ acc init abc160 -l python
 ```bash
 $ acc test <TASK>
 
-ex )
+ex.)
 $ acc test A
 ```
 
@@ -74,7 +74,7 @@ $ acc test A
 ```bash
 $ acc watch <TASK>
 
-ex )
+ex.)
 $ acc watch A
 ```
 
@@ -88,7 +88,7 @@ $ acc watch A
 ```bash
 $ acc submit <TASK>
 
-ex )
+ex.)
 $ acc submit A
 ```
 ---

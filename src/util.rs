@@ -57,6 +57,15 @@ pub fn has_extension<S: Into<String>>(task: S) -> bool {
     task.contains(".")
 }
 
+pub fn remove_extension<S:Into<String>>(file_name: S) -> String {
+    let file_name = file_name.into();
+    if !has_extension(&file_name) {
+        return file_name;
+    }
+    let extension = ".".to_string() + file_name.clone().split_terminator(".").last().unwrap();
+    file_name.strip_suffix(&extension).unwrap().to_string()
+}
+
 pub fn remove_last_indent<S: Into<String>>(content: S) -> String {
     let mut result = content.into();
     if result.ends_with("\n") {
@@ -115,7 +124,6 @@ pub fn select_language(languages: HashMap<String, Language>, extension: &str) ->
     print_content(&mut stdout, &mut down);
     for c in stdin.keys() {
         match c.unwrap() {
-            Key::Char('q') => break,
             Key::Char('j') | Key::Down  => down  = (down + 1) % count,
             Key::Char('k') | Key::Up    => down  = (count + down - 1) % count,
             Key::Char('\n') => {

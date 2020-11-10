@@ -13,6 +13,25 @@ use std::{env, process, thread, time};
 
 pub const NAME: &str = "test";
 
+pub const USAGE: &str ="acc test [<CONTEST_NAME>] [<CONTEST_TASK_NAME] <FILE_NAME>
+
+    --- arg -------------------------------------------
+      <CONTEST_NAME> <CONTEST_TASK_NAME> <FILE_NAME>
+          Specify all
+          ex.) $ acc test practice practice_1 p1(.cpp)
+
+      <CONTEST_NAME> <FILE_NAME>
+          CONTEST_TASK_NAME and FILE_NAME are the same.
+          ex.) $ acc test practice practice_1(.cpp)
+
+      <FILE_NAME>
+          Use settings in config.toml
+          ex.) $ acc test 1(.cpp)
+    ---------------------------------------------------
+
+";
+
+
 #[derive(Copy, Clone, Eq)]
 enum Status {
     AC = 0,
@@ -82,8 +101,13 @@ impl Testcase {
 
 pub fn get_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(&NAME)
-        .about("Run tests for <TASK_NAME>")
-        .arg(Arg::with_name("TASK_NAME").required(true).index(1))
+        .about("Run tests for <CONTEST_INFO>")
+        .usage(USAGE)
+        .arg(
+            Arg::with_name("CONTEST_INFO")
+            .required(true)
+            .max_values(3)
+        )
 }
 
 fn compile(config: &Test, task_name: &str) -> bool {
@@ -167,15 +191,14 @@ fn execute(
 
 pub fn get_testcases(
     contest_name: &str,
-    contest_task_name: Option<String>,
-    task_name: &str,
+    contest_task_name: String,
 ) -> (Vec<String>, Vec<String>) {
     let mut path = env::current_dir().unwrap();
     path.push("testcase");
     if !path.exists() {
         util::make_dir(path.to_str().unwrap());
     }
-    path.push([&task_name, "toml"].join("."));
+    path.push([&contest_task_name, "toml"].join("."));
     let testcase_path = path.as_path();
 
     // すでにテストケースがあるならそれを返す
@@ -195,12 +218,8 @@ pub fn get_testcases(
     let client = AccClient::new(true);
     let url = acc_client::TASK_URL.to_string();
     let url = url.replace("<CONTEST>", &contest_name);
-    let url = if let Some(contest_task_name) = contest_task_name {
-        url.replace("<CONTEST_TASK>", &contest_task_name)
-    } else {
-        url.replace("<CONTEST_TASK>", &contest_name)
-    };
-    let url = url.replace("<TASK>", &task_name.to_lowercase());
+    let url = url.replace("<CONTEST_TASK>", &contest_task_name);
+    println!("{}: get testcase in \"{}\"", colortext::INFO, &url);
     let result = client.get_page(&url).unwrap_or_else(|| {
         util::print_error("The correct test case could not be get");
         process::exit(1);
@@ -220,6 +239,10 @@ pub fn get_testcases(
         .collect();
     let inputs: Vec<String> = testcases.iter().step_by(2).cloned().collect();
     let outputs: Vec<String> = testcases.iter().skip(1).step_by(2).cloned().collect();
+    if inputs.len() != outputs.len() || inputs.len() == 0 {
+        util::print_error("getting testcase is failed");
+        process::exit(1);
+    }
 
     // テストケースファイルの作成
     let mut testcases = Vec::<Testcase>::new();
@@ -255,8 +278,7 @@ pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config
             println!("{}", colortext::RE);
             continue;
         }
-        if result.is_none() {
-            all_result = all_result.max(Status::TLE);
+        if result.is_none() { all_result = all_result.max(Status::TLE);
             println!("{}", colortext::TLE);
             continue;
         }
@@ -280,10 +302,25 @@ pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config
 }
 
 pub fn run(matches: &ArgMatches) {
-    let task_name = matches.value_of("TASK_NAME").unwrap();
+    let contest_info: Vec<&str> = matches.values_of("CONTEST_INFO").unwrap().collect();
     let config = util::load_config(true);
-    let contest_task_name = config.contest_task_name;
-    let contest_name = config.contest;
+
+    let (contest_name, contest_task_name, task_name) = match contest_info.len() {
+        1 => {
+            let task_name = contest_info[0];
+            let contest_task_name = config.contest_task_name.unwrap_or(config.contest.clone()) + "_" + &util::remove_extension(task_name).to_lowercase();
+            (config.contest, contest_task_name, task_name)
+        },
+        2 => {
+            let contest_task_name = util::remove_extension(contest_info[1]);
+            (contest_info[0].to_string(), contest_task_name, contest_info[1])
+        },
+        _ => {
+            let contest_task_name = util::remove_extension(contest_info[1]);
+            (contest_info[0].to_string(), contest_task_name, contest_info[2])
+        },
+    };
+
     let language = if util::has_extension(task_name) {
         let extension = task_name.clone().split_terminator(".").last().unwrap();
         util::select_language(config.languages, &extension).unwrap()
@@ -299,11 +336,10 @@ pub fn run(matches: &ArgMatches) {
     };
     let config = language.test;
     let task_name = if util::has_extension(task_name) {
-        let extension = String::from(".") + &language.extension;
-        task_name.strip_suffix(&extension).unwrap()
+        util::remove_extension(task_name)
     } else {
-        task_name
+        task_name.to_string()
     };
-    let (inputs, outputs) = get_testcases(&contest_name, contest_task_name, &task_name);
+    let (inputs, outputs) = get_testcases(&contest_name, contest_task_name);
     test(&task_name, &inputs, &outputs, &config);
 }
