@@ -20,16 +20,16 @@ pub const USAGE: &str ="acc watch [<CONTEST_NAME>] [<CONTEST_TASK_NAME] <FILE_NA
 
     --- arg -------------------------------------------
       <CONTEST_NAME> <CONTEST_TASK_NAME> <FILE_NAME>
-          Specify all
-          ex.) $ acc watch practice practice_1 p1(.cpp)
+        Specify all
+        ex.) $ acc watch practice practice_1 p1(.cpp)
 
       <CONTEST_NAME> <FILE_NAME>
-          CONTEST_TASK_NAME and FILE_NAME are the same.
-          ex.) $ acc watch practice practice_1(.cpp)
+        CONTEST_TASK_NAME and FILE_NAME are the same.
+        ex.) $ acc watch practice practice_1(.cpp)
 
       <FILE_NAME>
-          Use settings in config.toml
-          ex.) $ acc watch 1(.cpp)
+        Use settings in config.toml and specify the FILE_NAME as task name.
+        ex.) $ acc watch 1(.cpp)
     ---------------------------------------------------
 
 ";
