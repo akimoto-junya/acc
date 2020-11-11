@@ -75,7 +75,7 @@ pub fn run(matches: &ArgMatches) {
             6 // 指定されていないならA〜F作成
         };
         if total_file <= 0 {
-            println!("{}: TOTAL_TASK can not set", colortext::WARNING);
+            println!("{}: TOTAL_TASK can not set", colortext::warning());
         }
         let files = (b'A'..=b'Z')
             .take(total_file as usize)

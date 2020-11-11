@@ -13,6 +13,25 @@ use std::{env, process, thread, time};
 
 pub const NAME: &str = "test";
 
+pub const USAGE: &str ="acc test [<CONTEST_NAME>] [<CONTEST_TASK_NAME] <FILE_NAME>
+
+    --- arg -------------------------------------------
+      <CONTEST_NAME> <CONTEST_TASK_NAME> <FILE_NAME>
+        Specify all
+        ex.) $ acc test practice practice_1 p1(.cpp)
+
+      <CONTEST_NAME> <FILE_NAME>
+        CONTEST_TASK_NAME and FILE_NAME are the same.
+        ex.) $ acc test practice practice_1(.cpp)
+
+      <FILE_NAME>
+        Use settings in config.toml and specify the FILE_NAME as task name.
+        ex.) $ acc test 1(.cpp)
+    ---------------------------------------------------
+
+";
+
+
 #[derive(Copy, Clone, Eq)]
 enum Status {
     AC = 0,
@@ -42,10 +61,10 @@ impl PartialEq for Status {
 impl Status {
     fn to_string(&self) -> String {
         match self {
-            Status::AC => colortext::AC.to_string(),
-            Status::TLE => colortext::TLE.to_string(),
-            Status::RE => colortext::RE.to_string(),
-            Status::WA => colortext::WA.to_string(),
+            Status::AC => colortext::ac(),
+            Status::TLE => colortext::tle(),
+            Status::RE => colortext::re(),
+            Status::WA => colortext::wa(),
         }
     }
 }
@@ -82,19 +101,24 @@ impl Testcase {
 
 pub fn get_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(&NAME)
-        .about("Run tests for <TASK_NAME>")
-        .arg(Arg::with_name("TASK_NAME").required(true).index(1))
+        .about("Run tests for <CONTEST_INFO>")
+        .usage(USAGE)
+        .arg(
+            Arg::with_name("CONTEST_INFO")
+            .required(true)
+            .max_values(3)
+        )
 }
 
-fn compile(config: &Test, task_name: &str) -> bool {
+fn compile(config: &Test, file_name: &str) -> bool {
     let compiler = config.compiler.as_ref().unwrap();
     if config.compile_arg.is_none() {
         util::print_error("compile_arg in config.toml is not defined");
         return false;
     }
-    println!("{}: starting compile", colortext::INFO);
+    println!("{}: starting compile", colortext::info());
     let arg = config.compile_arg.as_ref().unwrap();
-    let arg = arg.replace("<TASK>", task_name);
+    let arg = arg.replace("<TASK>", file_name);
     let args = arg.split(" ");
     let output = Command::new(compiler)
         .args(args)
@@ -107,16 +131,16 @@ fn compile(config: &Test, task_name: &str) -> bool {
     if !status.success() {
         let output = String::from_utf8_lossy(&output.stderr);
         util::print_error("failed to compile");
-        println!("{}\n\nresult: {}", output, colortext::CE);
+        println!("{}\n\nresult: {}", output, colortext::ce());
         return false;
     }
-    println!("{}: compiled successfully\n", colortext::INFO);
+    println!("{}: compiled successfully\n", colortext::info());
     return true;
 }
 
 fn execute(
     config: &Test,
-    task_name: &str,
+    file_name: &str,
     testcase_input: &str,
     tle_time: u16,
 ) -> (bool, Option<String>) {
@@ -127,10 +151,10 @@ fn execute(
         .spawn()
         .expect("failed to execute process");
     let input = input.stdout.unwrap();
-    let command_name = config.command.replace("<TASK>", task_name);
+    let command_name = config.command.replace("<TASK>", file_name);
     let mut command = Command::new(command_name);
     if let Some(arg) = config.command_arg.as_ref() {
-        let arg = arg.replace("<TASK>", task_name);
+        let arg = arg.replace("<TASK>", file_name);
         let args = arg.split(" ");
         command.args(args);
     }
@@ -167,15 +191,14 @@ fn execute(
 
 pub fn get_testcases(
     contest_name: &str,
-    contest_task_name: Option<String>,
-    task_name: &str,
+    contest_task_name: String,
 ) -> (Vec<String>, Vec<String>) {
     let mut path = env::current_dir().unwrap();
     path.push("testcase");
     if !path.exists() {
         util::make_dir(path.to_str().unwrap());
     }
-    path.push([&task_name, "toml"].join("."));
+    path.push([&contest_task_name, "toml"].join("."));
     let testcase_path = path.as_path();
 
     // すでにテストケースがあるならそれを返す
@@ -195,12 +218,8 @@ pub fn get_testcases(
     let client = AccClient::new(true);
     let url = acc_client::TASK_URL.to_string();
     let url = url.replace("<CONTEST>", &contest_name);
-    let url = if let Some(contest_task_name) = contest_task_name {
-        url.replace("<CONTEST_TASK>", &contest_task_name)
-    } else {
-        url.replace("<CONTEST_TASK>", &contest_name)
-    };
-    let url = url.replace("<TASK>", &task_name.to_lowercase());
+    let url = url.replace("<CONTEST_TASK>", &contest_task_name);
+    println!("{}: get testcase in \"{}\"", colortext::info(), &url);
     let result = client.get_page(&url).unwrap_or_else(|| {
         util::print_error("The correct test case could not be get");
         process::exit(1);
@@ -220,6 +239,10 @@ pub fn get_testcases(
         .collect();
     let inputs: Vec<String> = testcases.iter().step_by(2).cloned().collect();
     let outputs: Vec<String> = testcases.iter().skip(1).step_by(2).cloned().collect();
+    if inputs.len() != outputs.len() || inputs.len() == 0 {
+        util::print_error("getting testcase is failed");
+        process::exit(1);
+    }
 
     // テストケースファイルの作成
     let mut testcases = Vec::<Testcase>::new();
@@ -233,41 +256,40 @@ pub fn get_testcases(
     (inputs, outputs)
 }
 
-pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config: &Test) {
+pub fn test(file_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config: &Test) {
     let mut all_result = Status::AC;
     let mut count = 0;
     let needs_print = config.print_wrong_answer;
     if config.compiler.is_some() {
-        let is_completed = compile(&config, task_name);
+        let is_completed = compile(&config, file_name);
         if !is_completed {
             return;
         }
     }
-    println!("{}: starting test ...", colortext::INFO);
+    println!("{}: starting test ...", colortext::info());
     for (input, output) in inputs.iter().zip(outputs.iter()) {
         count += 1;
         print!("- testcase {} ... ", count);
 
         let tle_time = config.tle_time;
-        let (caused_runtime_error, result) = execute(config, task_name, input, tle_time);
+        let (caused_runtime_error, result) = execute(config, file_name, input, tle_time);
         if caused_runtime_error {
             all_result = all_result.max(Status::RE);
-            println!("{}", colortext::RE);
+            println!("{}", colortext::re());
             continue;
         }
-        if result.is_none() {
-            all_result = all_result.max(Status::TLE);
-            println!("{}", colortext::TLE);
+        if result.is_none() { all_result = all_result.max(Status::TLE);
+            println!("{}", colortext::tle());
             continue;
         }
         let result = util::remove_last_indent(result.unwrap());
         let output = util::remove_last_indent(output);
         let is_correct = result == output;
         let status = if is_correct {
-            colortext::AC
+            colortext::ac()
         } else {
             all_result = all_result.max(Status::WA);
-            colortext::WA
+            colortext::wa()
         };
         println!("{}", status);
         if !is_correct && needs_print {
@@ -280,13 +302,31 @@ pub fn test(task_name: &str, inputs: &Vec<String>, outputs: &Vec<String>, config
 }
 
 pub fn run(matches: &ArgMatches) {
-    let task_name = matches.value_of("TASK_NAME").unwrap();
+    let contest_info: Vec<&str> = matches.values_of("CONTEST_INFO").unwrap().collect();
     let config = util::load_config(true);
-    let contest_task_name = config.contest_task_name;
-    let contest_name = config.contest;
-    let language = if util::has_extension(task_name) {
-        let extension = task_name.clone().split_terminator(".").last().unwrap();
-        util::select_language(config.languages, &extension).unwrap()
+
+    let (contest_name, contest_task_name, file_name) = match contest_info.len() {
+        1 => {
+            let file_name = contest_info[0];
+            let contest_task_name = config.contest_task_name.unwrap_or(config.contest.clone()) + "_" + &util::remove_extension(file_name).to_lowercase();
+            (config.contest, contest_task_name, file_name)
+        },
+        2 => {
+            let contest_task_name = util::remove_extension(contest_info[1]);
+            (contest_info[0].to_string(), contest_task_name, contest_info[1])
+        },
+        _ => {
+            let contest_task_name = util::remove_extension(contest_info[1]);
+            (contest_info[0].to_string(), contest_task_name, contest_info[2])
+        },
+    };
+
+    let language = if util::has_extension(file_name) {
+        let extension = file_name.clone().split_terminator(".").last().unwrap();
+        util::select_language(config.languages, &extension).unwrap_or_else(|| {
+            util::print_error(format!("language setting for \".{}\" is not found", extension));
+            process::exit(1);
+        })
     } else {
         let language_name = config.selected_language.unwrap_or_else(|| {
             util::print_error("selected_language setting or file extension is needed");
@@ -298,12 +338,20 @@ pub fn run(matches: &ArgMatches) {
         }).clone()
     };
     let config = language.test;
-    let task_name = if util::has_extension(task_name) {
-        let extension = String::from(".") + &language.extension;
-        task_name.strip_suffix(&extension).unwrap()
+    let extension = language.extension;
+    let file_name = if util::has_extension(file_name) {
+        util::remove_extension(file_name)
     } else {
-        task_name
+        file_name.to_string()
     };
-    let (inputs, outputs) = get_testcases(&contest_name, contest_task_name, &task_name);
-    test(&task_name, &inputs, &outputs, &config);
+
+    let mut path = env::current_dir().unwrap();
+    path.push([file_name.clone(), extension].join("."));
+    if !path.exists() {
+        util::print_error(format!("{} is not found", path.to_str().unwrap()));
+        process::exit(1);
+    }
+
+    let (inputs, outputs) = get_testcases(&contest_name, contest_task_name);
+    test(&file_name, &inputs, &outputs, &config);
 }
