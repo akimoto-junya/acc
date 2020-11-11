@@ -56,10 +56,14 @@ $ acc init abc160 -l python
 ソースコードのテストを行う.
 
 ```bash
-$ acc test <TASK>
+$ acc test <CONTEST_INFO>...
 
 ex.)
-$ acc test A
+$ acc test 1
+or
+$ acc test practice practice_1.cpp
+or
+$ acc test practice practice_1 p1
 ```
 
 - コンテストディレクトリ内で実行を行う必要がある．
@@ -72,10 +76,14 @@ $ acc test A
 指定されたタスクのファイル監視をし，変更されたらテストを行う.
 
 ```bash
-$ acc watch <TASK>
+$ acc watch <CONTEST_INFO>...
 
 ex.)
-$ acc watch A
+$ acc watch 1
+or
+$ acc watch practice practice_1.cpp
+or
+$ acc watch practice practice_1 p1
 ```
 
 - テスト関連の仕様はtestと同じ
@@ -86,10 +94,14 @@ $ acc watch A
 ソースコードの提出を行う．
 
 ```bash
-$ acc submit <TASK>
+$ acc submit <CONTEST_INFO>...
 
 ex.)
-$ acc submit A
+$ acc submit 1
+or
+$ acc submit practice practice_1.cpp
+or
+$ acc submit practice practice_1 p1
 ```
 ---
 
