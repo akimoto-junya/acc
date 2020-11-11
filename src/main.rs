@@ -4,7 +4,7 @@ use clap::App;
 
 fn main() {
     let matches = App::new("acc")
-        .version("v1.1.3")
+        .version("v1.3.9")
         .subcommand(subcommand::init::get_command())
         .subcommand(subcommand::submit::get_command())
         .subcommand(subcommand::test::get_command())
